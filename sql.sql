@@ -18,6 +18,7 @@ CREATE TABLE Hotels (
     admin_id INT,
     name VARCHAR(100) NOT NULL,
     address VARCHAR(255) NOT NULL,
+    hotel_logo VARCHAR(255) NOT  NULL , 
     city VARCHAR(50) NOT NULL,
     country VARCHAR(50) NOT NULL,
     phone VARCHAR(20),
