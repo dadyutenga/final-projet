@@ -31,6 +31,14 @@ class CreateHotelsTable extends Migration
                 'constraint' => 255,
                 'null' => false,
             ],
+            'hotel_logo' => [
+                'type' => 'ENUM',
+                'constraint' => ['hotel', 'motel', 'resort', 'inn'],
+                'default' => 'hotel',
+                'null' => false,
+            ],
+
+
             'city' => [
                 'type' => 'VARCHAR',
                 'constraint' => 50,
