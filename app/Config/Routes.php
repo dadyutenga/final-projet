@@ -20,7 +20,7 @@ $routes->group('admin', ['namespace' => 'App\Controllers'], function($routes) {
     $routes->get('dashboard', 'DashboardController::index');
     $routes->get('managers', 'ManagerController::index');
     $routes->get('managers/new', 'ManagerController::new');
-    $routes->post('managers', 'ManagerController::create');
+    $routes->post('managers/create', 'ManagerController::create');
     $routes->delete('managers/(:num)', 'ManagerController::delete/$1');
 });
 

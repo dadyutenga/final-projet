@@ -53,6 +53,7 @@ class ManagerController extends ResourceController
 
     public function create()
     {
+        // Validation rules
         $rules = [
             'username' => 'required|min_length[3]|max_length[50]|is_unique[managers.username]',
             'email' => 'required|valid_email|is_unique[managers.email]',
@@ -63,22 +64,52 @@ class ManagerController extends ResourceController
         ];
 
         if (!$this->validate($rules)) {
-            return redirect()->back()->withInput()->with('errors', $this->validator->getErrors());
+            return redirect()->back()
+                           ->withInput()
+                           ->with('errors', $this->validator->getErrors());
         }
 
+        // Prepare data for insertion
         $data = [
             'username' => $this->request->getPost('username'),
             'email' => $this->request->getPost('email'),
-            'password' => $this->request->getPost('password'),
+            'password_hash' => password_hash($this->request->getPost('password'), PASSWORD_DEFAULT),
             'full_name' => $this->request->getPost('full_name'),
             'phone' => $this->request->getPost('phone')
         ];
 
         try {
-            $this->managerModel->insert($data);
-            return redirect()->to('admin/managers')->with('success', 'Manager created successfully');
+            // Attempt to insert the data
+            if ($this->managerModel->save($data)) {
+                return redirect()->to(base_url('admin/managers'))
+                               ->with('success', 'Manager created successfully');
+            } else {
+                return redirect()->back()
+                               ->withInput()
+                               ->with('error', 'Failed to create manager: ' . implode(', ', $this->managerModel->errors()));
+            }
         } catch (\Exception $e) {
-            return redirect()->back()->withInput()->with('error', 'Failed to create manager');
+            log_message('error', '[Manager Creation] ' . $e->getMessage());
+            return redirect()->back()
+                           ->withInput()
+                           ->with('error', 'An error occurred while creating the manager');
+        }
+    }
+
+    public function delete($id = null)
+    {
+        if (!$id) {
+            return $this->response->setJSON(['success' => false, 'message' => 'No ID provided']);
+        }
+
+        try {
+            if ($this->managerModel->delete($id)) {
+                return $this->response->setJSON(['success' => true]);
+            } else {
+                return $this->response->setJSON(['success' => false, 'message' => 'Failed to delete manager']);
+            }
+        } catch (\Exception $e) {
+            return $this->response->setJSON(['success' => false, 'message' => $e->getMessage()]);
         }
     }
 }

@@ -162,58 +162,58 @@
                 <div class="login-logo">Hotel Management System</div>
                 <div class="login-subtitle">Admin Login</div>
             </div>
+                        
+                        <?php if (session()->getFlashdata('error')) : ?>
+                            <div class="alert alert-danger">
+                                <?= session()->getFlashdata('error') ?>
+                            </div>
+                        <?php endif; ?>
 
-            <?php if (session()->getFlashdata('error')) : ?>
-                <div class="alert alert-danger">
-                    <?= session()->getFlashdata('error') ?>
-                </div>
-            <?php endif; ?>
+                        <?php if (session()->getFlashdata('success')) : ?>
+                            <div class="alert alert-success">
+                                <?= session()->getFlashdata('success') ?>
+                            </div>
+                        <?php endif; ?>
 
-            <?php if (session()->getFlashdata('success')) : ?>
-                <div class="alert alert-success">
-                    <?= session()->getFlashdata('success') ?>
-                </div>
-            <?php endif; ?>
-
-            <form action="<?= base_url('admin/login') ?>" method="post">
+                        <form action="<?= base_url('admin/login') ?>" method="post">
                 <div class="form-group">
-                    <label for="username" class="form-label">Username or Email</label>
-                    <input type="text" 
-                           class="form-control <?= (validation_show_error('username')) ? 'is-invalid' : '' ?>" 
-                           id="username" 
-                           name="username" 
-                           value="<?= old('username') ?>"
-                           required>
-                    <?php if (validation_show_error('username')): ?>
-                        <div class="invalid-feedback">
-                            <?= validation_show_error('username') ?>
-                        </div>
-                    <?php endif; ?>
-                </div>
+                                <label for="username" class="form-label">Username or Email</label>
+                                <input type="text" 
+                                       class="form-control <?= (validation_show_error('username')) ? 'is-invalid' : '' ?>" 
+                                       id="username" 
+                                       name="username" 
+                                       value="<?= old('username') ?>"
+                                       required>
+                                <?php if (validation_show_error('username')): ?>
+                                    <div class="invalid-feedback">
+                                        <?= validation_show_error('username') ?>
+                                    </div>
+                                <?php endif; ?>
+                            </div>
 
                 <div class="form-group">
-                    <label for="password" class="form-label">Password</label>
-                    <input type="password" 
-                           class="form-control <?= (validation_show_error('password')) ? 'is-invalid' : '' ?>" 
-                           id="password" 
-                           name="password" 
-                           required>
-                    <?php if (validation_show_error('password')): ?>
-                        <div class="invalid-feedback">
-                            <?= validation_show_error('password') ?>
-                        </div>
-                    <?php endif; ?>
-                </div>
+                                <label for="password" class="form-label">Password</label>
+                                <input type="password" 
+                                       class="form-control <?= (validation_show_error('password')) ? 'is-invalid' : '' ?>" 
+                                       id="password" 
+                                       name="password" 
+                                       required>
+                                <?php if (validation_show_error('password')): ?>
+                                    <div class="invalid-feedback">
+                                        <?= validation_show_error('password') ?>
+                                    </div>
+                                <?php endif; ?>
+                            </div>
 
                 <div class="form-check">
-                    <input type="checkbox" class="form-check-input" id="remember_me" name="remember_me">
-                    <label class="form-check-label" for="remember_me">Remember me</label>
-                </div>
+                                <input type="checkbox" class="form-check-input" id="remember_me" name="remember_me">
+                                <label class="form-check-label" for="remember_me">Remember me</label>
+                            </div>
 
                 <button type="submit" class="btn btn-primary">
                     <i class="fas fa-sign-in-alt"></i> Login
                 </button>
-            </form>
+                        </form>
         </div>
     </div>
 </body>
