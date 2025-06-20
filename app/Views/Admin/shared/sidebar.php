@@ -1,6 +1,6 @@
 <div class="sidebar" id="sidebar">
     <div class="sidebar-header">
-        <div class="sidebar-logo">LuxeStay</div>
+        <div class="sidebar-logo">Hotel Management System</div>
         <div class="sidebar-subtitle">Admin Dashboard</div>
     </div>
     

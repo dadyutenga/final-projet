@@ -15,12 +15,6 @@ class CreateManagersTable extends Migration
                 'unsigned' => true,
                 'auto_increment' => true,
             ],
-            'hotel_id' => [
-                'type' => 'INT',
-                'constraint' => 11,
-                'unsigned' => true,
-                'null' => true,
-            ],
             'username' => [
                 'type' => 'VARCHAR',
                 'constraint' => 50,
@@ -59,7 +53,6 @@ class CreateManagersTable extends Migration
         $this->forge->addKey('manager_id', true);
         $this->forge->addUniqueKey('username');
         $this->forge->addUniqueKey('email');
-        $this->forge->addForeignKey('hotel_id', 'hotels', 'hotel_id', 'CASCADE', 'SET NULL');
         $this->forge->createTable('managers');
     }
 

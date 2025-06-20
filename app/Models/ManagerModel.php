@@ -13,7 +13,6 @@ class ManagerModel extends Model
     protected $useSoftDeletes   = false;
     protected $protectFields    = true;
     protected $allowedFields    = [
-        'hotel_id',
         'username',
         'password_hash',
         'email',
@@ -30,7 +29,6 @@ class ManagerModel extends Model
 
     // Validation
     protected $validationRules      = [
-        'hotel_id'      => 'permit_empty|is_natural_no_zero',
         'username'      => 'required|min_length[3]|max_length[50]|is_unique[managers.username,manager_id,{manager_id}]',
         'password_hash' => 'required|min_length[8]',
         'email'         => 'required|valid_email|max_length[100]|is_unique[managers.email,manager_id,{manager_id}]',
@@ -89,25 +87,6 @@ class ManagerModel extends Model
     }
 
     /**
-     * Get manager with hotel details
-     */
-    public function getManagerWithHotel($managerId)
-    {
-        return $this->select('managers.*, hotels.name as hotel_name, hotels.city, hotels.country, hotels.address')
-                    ->join('hotels', 'hotels.hotel_id = managers.hotel_id', 'left')
-                    ->where('managers.manager_id', $managerId)
-                    ->first();
-    }
-
-    /**
-     * Get managers by hotel
-     */
-    public function getManagersByHotel($hotelId)
-    {
-        return $this->where('hotel_id', $hotelId)->findAll();
-    }
-
-    /**
      * Verify manager credentials
      */
     public function verifyCredentials($username, $password)
@@ -141,8 +120,7 @@ class ManagerModel extends Model
     public function getManagerStaff($managerId, $limit = null, $offset = null)
     {
         $builder = $this->db->table('staff')
-                           ->select('staff.*, hotels.name as hotel_name')
-                           ->join('hotels', 'hotels.hotel_id = staff.hotel_id', 'left')
+                           ->select('staff.*')
                            ->where('staff.manager_id', $managerId)
                            ->orderBy('staff.full_name', 'ASC');
 
@@ -159,9 +137,8 @@ class ManagerModel extends Model
     public function getManagerTasks($managerId, $status = null, $limit = null, $offset = null)
     {
         $builder = $this->db->table('staff_tasks')
-                           ->select('staff_tasks.*, staff.full_name as staff_name, staff.role as staff_role, hotels.name as hotel_name')
+                           ->select('staff_tasks.*, staff.full_name as staff_name, staff.role as staff_role')
                            ->join('staff', 'staff.staff_id = staff_tasks.staff_id', 'left')
-                           ->join('hotels', 'hotels.hotel_id = staff_tasks.hotel_id', 'left')
                            ->where('staff_tasks.manager_id', $managerId)
                            ->orderBy('staff_tasks.due_date', 'ASC');
 
@@ -213,17 +190,6 @@ class ManagerModel extends Model
                                           ->where('status', 'overdue')
                                           ->countAllResults();
 
-        // Hotel reservations (if manager has a hotel)
-        if ($manager['hotel_id']) {
-            $stats['hotel_reservations'] = $this->db->table('reservations')
-                                                   ->where('hotel_id', $manager['hotel_id'])
-                                                   ->countAllResults();
-
-            $stats['hotel_rooms'] = $this->db->table('rooms')
-                                            ->where('hotel_id', $manager['hotel_id'])
-                                            ->countAllResults();
-        }
-
         return $stats;
     }
 
@@ -243,10 +209,9 @@ class ManagerModel extends Model
     /**
      * Search managers
      */
-    public function searchManagers($searchTerm, $hotelId = null, $limit = 20, $offset = 0)
+    public function searchManagers($searchTerm, $limit = 20, $offset = 0)
     {
-        $builder = $this->select('managers.*, hotels.name as hotel_name')
-                        ->join('hotels', 'hotels.hotel_id = managers.hotel_id', 'left');
+        $builder = $this->select('managers.*');
 
         if (!empty($searchTerm)) {
             $builder->groupStart()
@@ -254,10 +219,6 @@ class ManagerModel extends Model
                    ->orLike('managers.email', $searchTerm)
                    ->orLike('managers.full_name', $searchTerm)
                    ->groupEnd();
-        }
-
-        if ($hotelId) {
-            $builder->where('managers.hotel_id', $hotelId);
         }
 
         return $builder->limit($limit, $offset)->findAll();
@@ -270,8 +231,7 @@ class ManagerModel extends Model
     {
         $date = date('Y-m-d H:i:s', strtotime("-{$days} days"));
 
-        return $this->select('managers.*, hotels.name as hotel_name, MAX(staff_tasks.assigned_date) as last_task_assigned')
-                    ->join('hotels', 'hotels.hotel_id = managers.hotel_id', 'left')
+        return $this->select('managers.*, MAX(staff_tasks.assigned_date) as last_task_assigned')
                     ->join('staff_tasks', 'staff_tasks.manager_id = managers.manager_id', 'left')
                     ->where('staff_tasks.assigned_date >=', $date)
                     ->groupBy('managers.manager_id')

@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>LuxeStay Hotel - Premium Accommodation</title>
+    <title>Hotel Management  System  Hotel - Premium Accommodation</title>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
@@ -578,7 +578,7 @@
     <!-- Header -->
     <header>
         <nav class="container">
-            <div class="logo">LuxeStay</div>
+            <div class="logo">Hotel Management  System </div>
             <ul class="nav-links">
                 <li><a href="#home">Home</a></li>
                 <li><a href="#rooms">Rooms</a></li>
@@ -595,7 +595,7 @@
     <!-- Hero Section -->
     <section id="home" class="hero">
         <div class="hero-content">
-            <h1>Welcome to LuxeStay</h1>
+            <h1>Welcome to Hotel Management  System </h1>
             <p>Experience luxury and comfort in the heart of the city</p>
             
             <form class="booking-form">
@@ -770,7 +770,7 @@
         <div class="container">
             <div class="section-title">
                 <h2>What Our Guests Say</h2>
-                <p>Read reviews from our satisfied guests who experienced the LuxeStay difference</p>
+                <p>Read reviews from our satisfied guests who experienced the Hotel Management  System  difference</p>
             </div>
             
             <div class="testimonials-container">
@@ -788,7 +788,7 @@
                         </div>
 
                         <div class="testimonial">
-                            <p class="testimonial-text">"Perfect location, beautiful rooms, and outstanding service. The breakfast was delicious and the pool area was so relaxing. Highly recommend LuxeStay!"</p>
+                            <p class="testimonial-text">"Perfect location, beautiful rooms, and outstanding service. The breakfast was delicious and the pool area was so relaxing. Highly recommend Hotel Management  System !"</p>
                             <div class="testimonial-author">
                                 <div class="author-avatar" style="background-image: url('https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?ixlib=rb-4.0.3&auto=format&fit=crop&w=1170&q=80');"></div>
                                 <div class="author-info">
@@ -834,7 +834,7 @@
         <div class="container">
             <div class="footer-content">
                 <div class="footer-section">
-                    <h3>LuxeStay Hotel</h3>
+                    <h3>Hotel Management  System  Hotel</h3>
                     <p>Experience luxury and comfort in the heart of the city. Your perfect stay awaits.</p>
                     <div class="social-icons">
                         <a href="#"><i class="fab fa-facebook-f"></i></a>
@@ -871,14 +871,14 @@
                     <ul>
                         <li><i class="fas fa-map-marker-alt"></i> 123 Luxury Avenue, City Center</li>
                         <li><i class="fas fa-phone"></i> +1 (555) 123-4567</li>
-                        <li><i class="fas fa-envelope"></i> info@luxestay.com</li>
+                        <li><i class="fas fa-envelope"></i> info@Hotel Management  System .com</li>
                         <li><i class="fas fa-clock"></i> 24/7 Front Desk Service</li>
                     </ul>
                 </div>
             </div>
             
             <div class="footer-bottom">
-                <p>&copy; 2024 LuxeStay Hotel. All rights reserved. | Privacy Policy | Terms of Service</p>
+                <p>&copy; 2024 Hotel Management  System  Hotel. All rights reserved. | Privacy Policy | Terms of Service</p>
             </div>
         </div>
     </footer>
@@ -1005,7 +1005,7 @@
                 return;
             }
             
-            alert(`Booking request submitted!\nCheck-in: ${checkin}\nCheck-out: ${checkout}\nGuests: ${guests}\n\nThank you for choosing LuxeStay!`);
+            alert(`Booking request submitted!\nCheck-in: ${checkin}\nCheck-out: ${checkout}\nGuests: ${guests}\n\nThank you for choosing Hotel Management  System !`);
         });
 
         // Room booking buttons
