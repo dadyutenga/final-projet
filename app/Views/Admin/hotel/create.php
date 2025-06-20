@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Create Manager - Hotel Management System</title>
+    <title>Create Hotel - Hotel Management System</title>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
@@ -38,13 +38,6 @@
             transition: margin-left 0.3s ease;
         }
 
-        @media (max-width: 768px) {
-            .main-content {
-                margin-left: 0;
-                padding: 1rem;
-            }
-        }
-
         .page-header {
             display: flex;
             justify-content: space-between;
@@ -62,7 +55,7 @@
             border-radius: 12px;
             box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
             padding: 2rem;
-            max-width: 600px;
+            max-width: 800px;
             margin: 0 auto;
         }
 
@@ -82,7 +75,6 @@
             padding: 0.75rem 1rem;
             border: 1px solid var(--border-color);
             border-radius: 8px;
-            font-family: 'Poppins', sans-serif;
             font-size: 0.9rem;
             transition: all 0.3s ease;
         }
@@ -98,7 +90,6 @@
             border: none;
             border-radius: 8px;
             cursor: pointer;
-            font-family: 'Poppins', sans-serif;
             font-weight: 500;
             display: inline-flex;
             align-items: center;
@@ -133,12 +124,50 @@
             border: 1px solid #dc3545;
         }
 
-        .alert-success {
-            background: rgba(40, 167, 69, 0.1);
-            color: #28a745;
-            border: 1px solid #28a745;
+        .logo-preview {
+            width: 150px;
+            height: 150px;
+            border-radius: 8px;
+            border: 2px dashed var(--border-color);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 1rem;
+            overflow: hidden;
+            background: var(--light-gray);
         }
 
+        .logo-preview img {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: cover;
+        }
+
+        .logo-preview.empty i {
+            font-size: 2rem;
+            color: var(--text-gray);
+        }
+
+        select.form-control {
+            appearance: none;
+            background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+            background-repeat: no-repeat;
+            background-position: right 1rem center;
+            background-size: 1em;
+        }
+
+        @media (max-width: 768px) {
+            .main-content {
+                margin-left: 0;
+                padding: 1rem;
+            }
+            
+            .form-card {
+                margin: 1rem;
+            }
+        }
+
+        /* Sidebar Styles */
         .sidebar {
             position: fixed;
             left: 0;
@@ -214,21 +243,9 @@
                 transform: translateX(-100%);
             }
 
-            .sidebar.collapsed {
+            .sidebar.show {
                 transform: translateX(0);
             }
-
-            .form-card {
-                margin: 1rem;
-            }
-        }
-
-        .form-control.is-invalid {
-            border-color: #dc3545;
-        }
-
-        .form-control.is-invalid:focus {
-            box-shadow: 0 0 0 3px rgba(220, 53, 69, 0.1);
         }
     </style>
 </head>
@@ -236,87 +253,109 @@
     <?= $this->include('admin/shared/sidebar') ?>
 
     <div class="main-content">
-        <div class="page-header">
-            <h2>Create New Manager</h2>
-        </div>
-
         <div class="form-card">
+            <h2 class="mb-4">Create New Hotel</h2>
+
             <?php if (session()->getFlashdata('error')): ?>
                 <div class="alert alert-danger">
                     <?= session()->getFlashdata('error') ?>
                 </div>
             <?php endif; ?>
 
-            <form action="<?= base_url('admin/managers/create') ?>" method="post">
+            <form action="<?= base_url('admin/hotels/create') ?>" method="post" enctype="multipart/form-data">
                 <div class="form-group">
-                    <label for="username" class="form-label">Username</label>
+                    <label for="name" class="form-label">Hotel Name</label>
                     <input type="text" 
-                           class="form-control <?= session('errors.username') ? 'is-invalid' : '' ?>" 
-                           id="username" 
-                           name="username" 
-                           value="<?= old('username') ?>" 
+                           class="form-control <?= session('errors.name') ? 'is-invalid' : '' ?>" 
+                           id="name" 
+                           name="name" 
+                           value="<?= old('name') ?>" 
                            required>
-                    <?php if (session('errors.username')): ?>
+                    <?php if (session('errors.name')): ?>
                         <div class="error-feedback">
-                            <?= session('errors.username') ?>
+                            <?= session('errors.name') ?>
                         </div>
                     <?php endif; ?>
                 </div>
 
                 <div class="form-group">
-                    <label for="email" class="form-label">Email</label>
-                    <input type="email" 
-                           class="form-control <?= session('errors.email') ? 'is-invalid' : '' ?>" 
-                           id="email" 
-                           name="email" 
-                           value="<?= old('email') ?>" 
-                           required>
-                    <?php if (session('errors.email')): ?>
+                    <label for="manager_id" class="form-label">Manager</label>
+                    <select class="form-control <?= session('errors.manager_id') ? 'is-invalid' : '' ?>" 
+                            id="manager_id" 
+                            name="manager_id" 
+                            required>
+                        <option value="">Select Manager</option>
+                        <?php foreach ($managers as $manager): ?>
+                            <option value="<?= $manager['manager_id'] ?>" 
+                                    <?= old('manager_id') == $manager['manager_id'] ? 'selected' : '' ?>>
+                                <?= esc($manager['full_name']) ?> (<?= esc($manager['email']) ?>)
+                            </option>
+                        <?php endforeach; ?>
+                    </select>
+                    <?php if (session('errors.manager_id')): ?>
                         <div class="error-feedback">
-                            <?= session('errors.email') ?>
+                            <?= session('errors.manager_id') ?>
                         </div>
                     <?php endif; ?>
                 </div>
 
                 <div class="form-group">
-                    <label for="password" class="form-label">Password</label>
-                    <input type="password" 
-                           class="form-control <?= session('errors.password') ? 'is-invalid' : '' ?>" 
-                           id="password" 
-                           name="password" 
+                    <label for="hotel_logo" class="form-label">Hotel Logo</label>
+                    <div class="logo-preview empty" id="logoPreview">
+                        <i class="fas fa-image"></i>
+                    </div>
+                    <input type="file" 
+                           class="form-control <?= session('errors.hotel_logo') ? 'is-invalid' : '' ?>" 
+                           id="hotel_logo" 
+                           name="hotel_logo" 
+                           accept="image/*"
                            required>
-                    <?php if (session('errors.password')): ?>
+                    <?php if (session('errors.hotel_logo')): ?>
                         <div class="error-feedback">
-                            <?= session('errors.password') ?>
+                            <?= session('errors.hotel_logo') ?>
                         </div>
                     <?php endif; ?>
                 </div>
 
                 <div class="form-group">
-                    <label for="password_confirm" class="form-label">Confirm Password</label>
-                    <input type="password" 
-                           class="form-control <?= session('errors.password_confirm') ? 'is-invalid' : '' ?>" 
-                           id="password_confirm" 
-                           name="password_confirm" 
-                           required>
-                    <?php if (session('errors.password_confirm')): ?>
+                    <label for="address" class="form-label">Address</label>
+                    <textarea class="form-control <?= session('errors.address') ? 'is-invalid' : '' ?>" 
+                              id="address" 
+                              name="address" 
+                              required><?= old('address') ?></textarea>
+                    <?php if (session('errors.address')): ?>
                         <div class="error-feedback">
-                            <?= session('errors.password_confirm') ?>
+                            <?= session('errors.address') ?>
                         </div>
                     <?php endif; ?>
                 </div>
 
                 <div class="form-group">
-                    <label for="full_name" class="form-label">Full Name</label>
+                    <label for="city" class="form-label">City</label>
                     <input type="text" 
-                           class="form-control <?= session('errors.full_name') ? 'is-invalid' : '' ?>" 
-                           id="full_name" 
-                           name="full_name" 
-                           value="<?= old('full_name') ?>" 
+                           class="form-control <?= session('errors.city') ? 'is-invalid' : '' ?>" 
+                           id="city" 
+                           name="city" 
+                           value="<?= old('city') ?>" 
                            required>
-                    <?php if (session('errors.full_name')): ?>
+                    <?php if (session('errors.city')): ?>
                         <div class="error-feedback">
-                            <?= session('errors.full_name') ?>
+                            <?= session('errors.city') ?>
+                        </div>
+                    <?php endif; ?>
+                </div>
+
+                <div class="form-group">
+                    <label for="country" class="form-label">Country</label>
+                    <input type="text" 
+                           class="form-control <?= session('errors.country') ? 'is-invalid' : '' ?>" 
+                           id="country" 
+                           name="country" 
+                           value="<?= old('country') ?>" 
+                           required>
+                    <?php if (session('errors.country')): ?>
+                        <div class="error-feedback">
+                            <?= session('errors.country') ?>
                         </div>
                     <?php endif; ?>
                 </div>
@@ -336,12 +375,46 @@
                 </div>
 
                 <div class="form-group">
+                    <label for="email" class="form-label">Email</label>
+                    <input type="email" 
+                           class="form-control <?= session('errors.email') ? 'is-invalid' : '' ?>" 
+                           id="email" 
+                           name="email" 
+                           value="<?= old('email') ?>">
+                    <?php if (session('errors.email')): ?>
+                        <div class="error-feedback">
+                            <?= session('errors.email') ?>
+                        </div>
+                    <?php endif; ?>
+                </div>
+
+                <div class="form-group">
                     <button type="submit" class="btn btn-primary">
-                        <i class="fas fa-save"></i> Create Manager
+                        <i class="fas fa-save"></i> Create Hotel
                     </button>
                 </div>
             </form>
         </div>
     </div>
+
+    <script>
+        // Logo preview functionality
+        document.getElementById('hotel_logo').addEventListener('change', function(e) {
+            const preview = document.getElementById('logoPreview');
+            const file = e.target.files[0];
+            
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    preview.innerHTML = `<img src="${e.target.result}" alt="Logo Preview">`;
+                    preview.classList.remove('empty');
+                }
+                reader.readAsDataURL(file);
+            } else {
+                preview.innerHTML = '<i class="fas fa-image"></i>';
+                preview.classList.add('empty');
+            }
+        });
+    </script>
 </body>
 </html>

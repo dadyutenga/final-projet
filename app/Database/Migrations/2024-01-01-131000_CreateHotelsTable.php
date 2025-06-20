@@ -15,7 +15,7 @@ class CreateHotelsTable extends Migration
                 'unsigned' => true,
                 'auto_increment' => true,
             ],
-            'admin_id' => [
+            'manager_id' => [
                 'type' => 'INT',
                 'constraint' => 11,
                 'unsigned' => true,
@@ -32,13 +32,10 @@ class CreateHotelsTable extends Migration
                 'null' => false,
             ],
             'hotel_logo' => [
-                'type' => 'ENUM',
-                'constraint' => ['hotel', 'motel', 'resort', 'inn'],
-                'default' => 'hotel',
+                'type' => 'VARCHAR',
+                'constraint' => 255,
                 'null' => false,
             ],
-
-
             'city' => [
                 'type' => 'VARCHAR',
                 'constraint' => 50,
@@ -70,7 +67,7 @@ class CreateHotelsTable extends Migration
         ]);
 
         $this->forge->addKey('hotel_id', true);
-        $this->forge->addForeignKey('admin_id', 'admins', 'admin_id', 'CASCADE', 'SET NULL');
+        $this->forge->addForeignKey('manager_id', 'managers', 'manager_id', 'CASCADE', 'SET NULL');
         $this->forge->createTable('hotels');
     }
 

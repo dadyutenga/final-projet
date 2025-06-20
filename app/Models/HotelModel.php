@@ -13,7 +13,7 @@ class HotelModel extends Model
     protected $useSoftDeletes   = false;
     protected $protectFields    = true;
     protected $allowedFields    = [
-        'admin_id',
+        'manager_id',
         'name',
         'address',
         'hotel_logo',
@@ -32,7 +32,7 @@ class HotelModel extends Model
 
     // Validation
     protected $validationRules      = [
-        'admin_id'    => 'permit_empty|is_natural_no_zero',
+        'manager_id'   => 'permit_empty|is_natural_no_zero',
         'name'        => 'required|max_length[100]',
         'address'     => 'required|max_length[255]',
         'hotel_logo'  => 'required|max_length[255]',
@@ -85,22 +85,22 @@ class HotelModel extends Model
     protected $afterDelete    = [];
 
     /**
-     * Get hotel with admin details
+     * Get hotel with manager details
      */
-    public function getHotelWithAdmin($hotelId)
+    public function getHotelWithManager($hotelId)
     {
-        return $this->select('hotels.*, admins.full_name as admin_name, admins.email as admin_email')
-                    ->join('admins', 'admins.admin_id = hotels.admin_id', 'left')
+        return $this->select('hotels.*, managers.full_name as manager_name, managers.email as manager_email')
+                    ->join('managers', 'managers.manager_id = hotels.manager_id', 'left')
                     ->where('hotels.hotel_id', $hotelId)
                     ->first();
     }
 
     /**
-     * Get hotels by admin
+     * Get hotels by manager
      */
-    public function getHotelsByAdmin($adminId)
+    public function getHotelsByManager($managerId)
     {
-        return $this->where('admin_id', $adminId)->findAll();
+        return $this->where('manager_id', $managerId)->findAll();
     }
 
     /**

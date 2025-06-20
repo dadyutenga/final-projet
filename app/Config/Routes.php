@@ -4,6 +4,7 @@ use CodeIgniter\Router\RouteCollection;
 use App\Controllers\AuthController;
 use App\Controllers\DashboardController;
 use App\Controllers\ManagerController;
+use App\Controllers\HotelController;
 
 /**
  * @var RouteCollection $routes
@@ -22,6 +23,10 @@ $routes->group('admin', ['namespace' => 'App\Controllers'], function($routes) {
     $routes->get('managers/new', 'ManagerController::new');
     $routes->post('managers/create', 'ManagerController::create');
     $routes->delete('managers/(:num)', 'ManagerController::delete/$1');
+    $routes->get('hotels', 'HotelController::index');
+    $routes->get('hotels/new', 'HotelController::new');
+    $routes->post('hotels/create', 'HotelController::create');
+    $routes->delete('hotels/(:num)', 'HotelController::delete/$1');
 });
 
 
