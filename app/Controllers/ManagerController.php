@@ -20,18 +20,28 @@ class ManagerController extends ResourceController
         $page = $this->request->getGet('page') ?? 1;
         $perPage = 10;
 
-        $managers = $this->managerModel->searchManagers(
-            $searchTerm,
-            $perPage,
-            ($page - 1) * $perPage
-        );
+        // Set up pagination
+        $this->managerModel->builder()->select('*');
+        
+        // Apply search if term exists
+        if (!empty($searchTerm)) {
+            $this->managerModel->builder()
+                ->groupStart()
+                ->like('username', $searchTerm)
+                ->orLike('email', $searchTerm)
+                ->orLike('full_name', $searchTerm)
+                ->groupEnd();
+        }
 
-        $total = $this->managerModel->countAllResults();
+        // Get paginated results
+        $managers = $this->managerModel->paginate($perPage);
+        
+        // Get pager
+        $pager = $this->managerModel->pager;
 
         return view('admin/managers/index', [
             'managers' => $managers,
-            'pager' => $this->managerModel->pager,
-            'total' => $total,
+            'pager' => $pager,
             'searchTerm' => $searchTerm
         ]);
     }

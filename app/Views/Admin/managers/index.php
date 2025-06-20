@@ -195,7 +195,11 @@
             </tbody>
         </table>
 
-        <?= $pager->links() ?>
+        <?php if (isset($pager) && $pager->getPageCount() > 1): ?>
+            <div class="pagination">
+                <?= $pager->links() ?>
+            </div>
+        <?php endif; ?>
     </div>
 
     <script>
