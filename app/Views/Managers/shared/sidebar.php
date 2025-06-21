@@ -7,19 +7,40 @@
     <nav class="sidebar-nav">
         <div class="nav-section">
             <div class="nav-section-title">Main</div>
-            <a href="<?= base_url('admin/dashboard') ?>" class="nav-item <?= current_url() == base_url('admin/dashboard') ? 'active' : '' ?>" data-section="dashboard">
+            <a href="<?= base_url('manager/dashboard') ?>" class="nav-item <?= current_url() == base_url('manager/dashboard') ? 'active' : '' ?>" data-section="dashboard">
                 <i class="fas fa-tachometer-alt"></i>
                 <span>Dashboard</span>
             </a>
-            <a href="<?= base_url('admin/hotels') ?>" class="nav-item <?= current_url() == base_url('admin/hotels') ? 'active' : '' ?>" data-section="hotels">
+            <a href="<?= base_url('manager/hotels') ?>" class="nav-item <?= current_url() == base_url('manager/hotels') ? 'active' : '' ?>" data-section="hotels">
                 <i class="fas fa-hotel"></i>
                 <span>Hotels</span>
             </a>
-            <a href="<?= base_url('admin/managers') ?>" class="nav-item <?= current_url() == base_url('admin/managers') ? 'active' : '' ?>" data-section="managers">
+            <a href="<?= base_url('manager/staff') ?>" class="nav-item <?= current_url() == base_url('manager/staff') ? 'active' : '' ?>" data-section="managers">
                 <i class="fas fa-user-tie"></i>
-                <span>Managers</span>
+                <span>Staff</span>
             </a>
             
+        </div>
+
+        <div class="nav-section">
+            <div class="nav-section-title">Bookings</div>
+            <a href="<?= base_url('manager/bookings') ?>" class="nav-item <?= current_url() == base_url('manager/bookings') ? 'active' : '' ?>" data-section="bookings">
+                <i class="fas fa-calendar-alt"></i>
+                <span>Bookings</span>
+            </a>
+            <a href="<?= base_url('manager/rooms') ?>" class="nav-item <?= current_url() == base_url('manager/rooms') ? 'active' : '' ?>" data-section="bookings">
+                <i class="fas fa-calendar-alt"></i>
+                <span>Rooms</span>
+            </a>
+            <a href="<?= base_url('manager/reservations') ?>" class="nav-item <?= current_url() == base_url('manager/reservations') ? 'active' : '' ?>" data-section="bookings">
+                <i class="fas fa-calendar-alt"></i>
+                <span>Reservations</span>
+            </a>
+            <a href="<?= base_url('manager/payments') ?>" class="nav-item <?= current_url() == base_url('manager/payments') ? 'active' : '' ?>" data-section="bookings">
+                <i class="fas fa-calendar-alt"></i>
+                <span>Payments</span>
+            </a>
+
         </div>
         
         
