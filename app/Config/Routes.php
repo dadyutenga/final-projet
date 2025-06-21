@@ -5,7 +5,7 @@ use App\Controllers\AuthController;
 use App\Controllers\DashboardController;
 use App\Controllers\ManagerController;
 use App\Controllers\HotelController;
-
+use App\Controllers\ManagerAuthController;
 /**
  * @var RouteCollection $routes
  */
@@ -27,6 +27,14 @@ $routes->group('admin', ['namespace' => 'App\Controllers'], function($routes) {
     $routes->get('hotels/new', 'HotelController::new');
     $routes->post('hotels/create', 'HotelController::create');
     $routes->delete('hotels/(:num)', 'HotelController::delete/$1');
+});
+
+$routes->group('manager', ['namespace' => 'App\Controllers'], function($routes) {
+    $routes->get('login', 'ManagerAuthController::login');
+    $routes->post('login', 'ManagerAuthController::attemptLogin');
+    $routes->get('logout', 'ManagerAuthController::logout');
+    $routes->get('dashboard', 'ManagerDashboardController::index');
+
 });
 
 
