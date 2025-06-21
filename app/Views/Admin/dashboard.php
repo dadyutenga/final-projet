@@ -311,11 +311,11 @@
                             <?php if (isset($recent_hotels) && is_array($recent_hotels)): ?>
                                 <?php foreach ($recent_hotels as $hotel): ?>
                                 <tr>
-                                    <td><?= esc($hotel['name']) ?></td>
-                                    <td><?= esc($hotel['location']) ?></td>
+                                    <td><?= esc($hotel['name'] ?? 'Unknown') ?></td>
+                                    <td><?= esc($hotel['location'] ?? 'Not specified') ?></td>
                                     <td>
-                                        <span class="status-badge status-<?= strtolower(esc($hotel['status'])) ?>">
-                                            <?= ucfirst(esc($hotel['status'])) ?>
+                                        <span class="status-badge status-<?= strtolower(esc($hotel['status'] ?? 'inactive')) ?>">
+                                            <?= ucfirst(esc($hotel['status'] ?? 'Inactive')) ?>
                                         </span>
                                     </td>
                                 </tr>
