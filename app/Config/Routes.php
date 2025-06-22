@@ -6,6 +6,7 @@ use App\Controllers\DashboardController;
 use App\Controllers\ManagerController;
 use App\Controllers\HotelController;
 use App\Controllers\ManagerAuthController;
+use App\Controllers\StaffController;
 /**
  * @var RouteCollection $routes
  */
@@ -34,7 +35,15 @@ $routes->group('manager', ['namespace' => 'App\Controllers'], function($routes) 
     $routes->post('login', 'ManagerAuthController::attemptLogin');
     $routes->get('logout', 'ManagerAuthController::logout');
     $routes->get('dashboard', 'ManagerDashboardController::index');
-
+    
+    // New routes for StaffController
+    $routes->get('staff', 'StaffController::index');  // Lists staff
+    $routes->get('staff/create', 'StaffController::create');  // Shows create form
+    $routes->post('staff/store', 'StaffController::store');  // Handles staff creation
+    $routes->get('staff/(:num)', 'StaffController::show/$1');  // Shows a single staff member
+    $routes->get('staff/(:num)/edit', 'StaffController::edit/$1');  // Shows edit form
+    $routes->post('staff/(:num)', 'StaffController::update/$1');  // Handles staff update (assumes POST with _method=PUT)
+    $routes->delete('staff/(:num)', 'StaffController::destroy/$1');  // Handles staff deletion
 });
 
 
