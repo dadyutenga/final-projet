@@ -19,7 +19,9 @@ class StaffModel extends Model
         'role',
         'phone',
         'email',
-        'hire_date'
+        'hire_date',
+        'username',
+        'password_hash'
     ];
 
     // Dates
@@ -37,7 +39,9 @@ class StaffModel extends Model
         'role'       => 'required|max_length[50]',
         'phone'      => 'permit_empty|max_length[20]',
         'email'      => 'permit_empty|valid_email|max_length[100]',
-        'hire_date'  => 'permit_empty|valid_date'
+        'hire_date'  => 'permit_empty|valid_date',
+        'username'   => 'required|min_length[3]|max_length[50]|is_unique[staff.username,staff_id,{staff_id}]',
+        'password_hash' => 'required|min_length[8]'
     ];
     protected $validationMessages   = [
         'full_name' => [
@@ -57,6 +61,16 @@ class StaffModel extends Model
         ],
         'hire_date' => [
             'valid_date'  => 'Please enter a valid hire date'
+        ],
+        'username' => [
+            'required'    => 'Username is required',
+            'min_length'  => 'Username must be at least 3 characters long',
+            'max_length'  => 'Username cannot exceed 50 characters',
+            'is_unique'   => 'Username already exists'
+        ],
+        'password_hash' => [
+            'required'    => 'Password is required',
+            'min_length'  => 'Password must be at least 8 characters long'
         ]
     ];
     protected $skipValidation       = false;
@@ -64,14 +78,26 @@ class StaffModel extends Model
 
     // Callbacks
     protected $allowCallbacks = true;
-    protected $beforeInsert   = [];
+    protected $beforeInsert   = ['hashPassword'];
     protected $afterInsert    = [];
-    protected $beforeUpdate   = [];
+    protected $beforeUpdate   = ['hashPassword'];
     protected $afterUpdate    = [];
     protected $beforeFind     = [];
     protected $afterFind      = [];
     protected $beforeDelete   = [];
     protected $afterDelete    = [];
+
+    /**
+     * Hash password before insert or update
+     */
+    protected function hashPassword(array $data)
+    {
+        if (isset($data['data']['password'])) {
+            $data['data']['password_hash'] = password_hash($data['data']['password'], PASSWORD_DEFAULT);
+            unset($data['data']['password']);
+        }
+        return $data;
+    }
 
     /**
      * Get staff with hotel and manager details

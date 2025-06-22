@@ -582,8 +582,9 @@
             <ul class="nav-links">
                 <li><a href="#home">Home</a></li>
                 <li><a href="#rooms">Rooms</a></li>
-                <li><a href="#features">Features</a></li>
-                <li><a href="#testimonials">Reviews</a></li>
+                <li><a href="manager/login">Managers-Login</a></li>
+                <li><a href="admin/login">Admin-Login</a></li>
+                <li><a href="#testimonials">User-lofin</a></li>
                 <li><a href="#contact">Contact</a></li>
             </ul>
             <button class="mobile-menu">
