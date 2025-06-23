@@ -65,6 +65,16 @@ $routes->group('manager', ['namespace' => 'App\Controllers'], function($routes) 
     $routes->post('rooms/update/(:num)', 'RoomController::update/$1');
     $routes->delete('rooms/destroy/(:num)', 'RoomController::destroy/$1');
     $routes->post('rooms/bulk-status-update', 'RoomController::bulkStatusUpdate');
+
+    $routes->get('staff-tasks', 'StaffTaskController::index');
+    $routes->get('staff-tasks/create', 'StaffTaskController::create');
+    $routes->post('staff-tasks/store', 'StaffTaskController::store');
+    $routes->get('staff-tasks/show/(:num)', 'StaffTaskController::show/$1');
+    $routes->get('staff-tasks/edit/(:num)', 'StaffTaskController::edit/$1');
+    $routes->post('staff-tasks/update/(:num)', 'StaffTaskController::update/$1');
+    $routes->delete('staff-tasks/destroy/(:num)', 'StaffTaskController::destroy/$1');
+    $routes->post('staff-tasks/update-status/(:num)', 'StaffTaskController::updateStatus/$1');
+    $routes->post('staff-tasks/reassign/(:num)', 'StaffTaskController::reassign/$1');
 });
 
 

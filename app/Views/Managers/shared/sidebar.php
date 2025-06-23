@@ -17,7 +17,7 @@
                 <span>Staff</span>
             </a>
 
-            <a href="<?= base_url('manager/staff-task') ?>" class="nav-item <?= current_url() == base_url('manager/staff') ? 'active' : '' ?>" data-section="managers">
+            <a href="<?= base_url('manager/staff-tasks') ?>" class="nav-item <?= current_url() == base_url('manager/staff') ? 'active' : '' ?>" data-section="managers">
                 <i class="fas fa-user-tie"></i>
                 <span> Assign Staff Tasks</span>
             </a>
