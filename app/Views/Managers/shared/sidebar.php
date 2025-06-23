@@ -31,7 +31,7 @@
                 <i class="fas fa-calendar-alt"></i>
                 <span>Rooms</span>
             </a>
-              <a href="<?= base_url('manager/rooms') ?>" class="nav-item <?= current_url() == base_url('manager/rooms') ? 'active' : '' ?>" data-section="bookings">
+              <a href="<?= base_url('manager/roomtypes') ?>" class="nav-item <?= current_url() == base_url('manager/rooms') ? 'active' : '' ?>" data-section="bookings">
                 <i class="fas fa-calendar-alt"></i>
                 <span>Rooms Types</span>
             </a>

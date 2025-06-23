@@ -29,16 +29,20 @@ class RoomTypeModel extends Model
 
     // Validation
     protected $validationRules      = [
-        'hotel_id'    => 'permit_empty|is_natural_no_zero',
-        'type_name'   => 'required|max_length[50]',
+        'hotel_id'    => 'required|is_natural_no_zero',
+        'type_name'   => 'required|max_length[100]',
         'description' => 'permit_empty',
         'base_price'  => 'required|decimal|greater_than[0]',
         'capacity'    => 'required|is_natural_no_zero'
     ];
     protected $validationMessages   = [
+        'hotel_id' => [
+            'required'           => 'Hotel ID is required',
+            'is_natural_no_zero' => 'Invalid hotel ID'
+        ],
         'type_name' => [
-            'required'    => 'Room type name is required',
-            'max_length'  => 'Room type name cannot exceed 50 characters'
+            'required'   => 'Room type name is required',
+            'max_length' => 'Room type name cannot exceed 100 characters'
         ],
         'base_price' => [
             'required'     => 'Base price is required',
@@ -65,71 +69,16 @@ class RoomTypeModel extends Model
     protected $afterDelete    = [];
 
     /**
-     * Get room type with hotel details
+     * Get room types with room counts for a hotel
      */
-    public function getRoomTypeWithHotel($roomTypeId)
+    public function getRoomTypesWithCounts($hotelId)
     {
-        return $this->select('room_types.*, hotels.name as hotel_name, hotels.city, hotels.country')
-                    ->join('hotels', 'hotels.hotel_id = room_types.hotel_id', 'left')
-                    ->where('room_types.room_type_id', $roomTypeId)
-                    ->first();
-    }
-
-    /**
-     * Get room types by hotel
-     */
-    public function getRoomTypesByHotel($hotelId)
-    {
-        return $this->where('hotel_id', $hotelId)
-                    ->orderBy('base_price', 'ASC')
-                    ->findAll();
-    }
-
-    /**
-     * Get room types with room counts
-     */
-    public function getRoomTypesWithCounts($hotelId = null)
-    {
-        $builder = $this->select('room_types.*,
-                                COUNT(rooms.room_id) as total_rooms,
-                                COUNT(CASE WHEN rooms.status = "available" THEN 1 END) as available_rooms,
-                                COUNT(CASE WHEN rooms.status = "occupied" THEN 1 END) as occupied_rooms,
-                                COUNT(CASE WHEN rooms.status = "maintenance" THEN 1 END) as maintenance_rooms')
-                        ->join('rooms', 'rooms.room_type_id = room_types.room_type_id', 'left')
-                        ->groupBy('room_types.room_type_id')
-                        ->orderBy('room_types.base_price', 'ASC');
-
-        if ($hotelId) {
-            $builder->where('room_types.hotel_id', $hotelId);
-        }
-
-        return $builder->findAll();
-    }
-
-    /**
-     * Get available room types for date range
-     */
-    public function getAvailableRoomTypes($hotelId, $checkIn, $checkOut, $guestCount = 1)
-    {
-        return $this->select('room_types.*,
-                            COUNT(rooms.room_id) as total_rooms,
-                            COUNT(CASE WHEN rooms.status = "available" THEN 1 END) as available_rooms,
-                            (COUNT(CASE WHEN rooms.status = "available" THEN 1 END) -
-                             COALESCE(occupied_count.occupied, 0)) as rooms_available_for_dates')
+        return $this->select('room_types.*, 
+                             COUNT(rooms.room_id) as total_rooms,
+                             SUM(CASE WHEN rooms.status = "available" THEN 1 ELSE 0 END) as available_rooms')
                     ->join('rooms', 'rooms.room_type_id = room_types.room_type_id', 'left')
-                    ->join('(SELECT room_type_id, COUNT(*) as occupied
-                             FROM rooms r
-                             INNER JOIN reservations res ON r.room_id = res.room_id
-                             WHERE res.status NOT IN ("cancelled")
-                             AND res.check_in_date <= "' . $checkOut . '"
-                             AND res.check_out_date >= "' . $checkIn . '"
-                             GROUP BY room_type_id) occupied_count',
-                           'occupied_count.room_type_id = room_types.room_type_id', 'left')
                     ->where('room_types.hotel_id', $hotelId)
-                    ->where('room_types.capacity >=', $guestCount)
                     ->groupBy('room_types.room_type_id')
-                    ->having('rooms_available_for_dates >', 0)
-                    ->orderBy('room_types.base_price', 'ASC')
                     ->findAll();
     }
 
@@ -138,153 +87,151 @@ class RoomTypeModel extends Model
      */
     public function getRoomTypeStatistics($roomTypeId)
     {
+        $db = \Config\Database::connect();
+        
+        // Get basic room type info
         $roomType = $this->find($roomTypeId);
+        
         if (!$roomType) {
             return null;
         }
-
-        $stats = [];
-
-        // Room counts
-        $roomCounts = $this->db->table('rooms')
-                              ->select('status, COUNT(*) as count')
-                              ->where('room_type_id', $roomTypeId)
-                              ->groupBy('status')
-                              ->get()
-                              ->getResultArray();
-
-        $stats['room_counts'] = [
-            'available' => 0,
-            'occupied' => 0,
-            'maintenance' => 0,
-            'total' => 0
+        
+        // Get room counts by status
+        $roomStats = $db->table('rooms')
+                       ->select('status, COUNT(*) as count')
+                       ->where('room_type_id', $roomTypeId)
+                       ->groupBy('status')
+                       ->get()
+                       ->getResultArray();
+        
+        // Get booking statistics (if bookings table exists)
+        $bookingStats = $db->table('bookings b')
+                          ->select('COUNT(DISTINCT b.booking_id) as total_bookings,
+                                   AVG(DATEDIFF(b.check_out_date, b.check_in_date)) as avg_stay_duration,
+                                   SUM(b.total_amount) as total_revenue')
+                          ->join('rooms r', 'r.room_id = b.room_id')
+                          ->where('r.room_type_id', $roomTypeId)
+                          ->where('b.status !=', 'cancelled')
+                          ->get()
+                          ->getRowArray();
+        
+        return [
+            'room_type' => $roomType,
+            'room_stats' => $roomStats,
+            'booking_stats' => $bookingStats
         ];
-
-        foreach ($roomCounts as $count) {
-            $stats['room_counts'][$count['status']] = $count['count'];
-            $stats['room_counts']['total'] += $count['count'];
-        }
-
-        // Reservation statistics
-        $stats['total_reservations'] = $this->db->table('reservations')
-                                               ->join('rooms', 'rooms.room_id = reservations.room_id')
-                                               ->where('rooms.room_type_id', $roomTypeId)
-                                               ->countAllResults();
-
-        // Revenue statistics (last 30 days)
-        $thirtyDaysAgo = date('Y-m-d', strtotime('-30 days'));
-        $stats['revenue_last_30_days'] = $this->db->table('reservations')
-                                                 ->selectSum('total_price')
-                                                 ->join('rooms', 'rooms.room_id = reservations.room_id')
-                                                 ->where('rooms.room_type_id', $roomTypeId)
-                                                 ->where('reservations.status', 'completed')
-                                                 ->where('reservations.check_out_date >=', $thirtyDaysAgo)
-                                                 ->get()
-                                                 ->getRow()
-                                                 ->total_price ?? 0;
-
-        return $stats;
     }
 
     /**
-     * Search room types
+     * Get room types by hotel
      */
-    public function searchRoomTypes($searchTerm, $hotelId = null, $minPrice = null, $maxPrice = null, $minCapacity = null)
+    public function getRoomTypesByHotel($hotelId)
     {
-        $builder = $this->select('room_types.*, hotels.name as hotel_name')
-                        ->join('hotels', 'hotels.hotel_id = room_types.hotel_id', 'left');
-
-        if (!empty($searchTerm)) {
-            $builder->groupStart()
-                   ->like('room_types.type_name', $searchTerm)
-                   ->orLike('room_types.description', $searchTerm)
-                   ->groupEnd();
-        }
-
-        if ($hotelId) {
-            $builder->where('room_types.hotel_id', $hotelId);
-        }
-
-        if ($minPrice !== null) {
-            $builder->where('room_types.base_price >=', $minPrice);
-        }
-
-        if ($maxPrice !== null) {
-            $builder->where('room_types.base_price <=', $maxPrice);
-        }
-
-        if ($minCapacity !== null) {
-            $builder->where('room_types.capacity >=', $minCapacity);
-        }
-
-        return $builder->orderBy('room_types.base_price', 'ASC')->findAll();
+        return $this->where('hotel_id', $hotelId)->findAll();
     }
 
     /**
-     * Get most popular room types
+     * Get room type with rooms
      */
-    public function getMostPopularRoomTypes($hotelId = null, $limit = 10)
-    {
-        $builder = $this->select('room_types.*, COUNT(reservations.reservation_id) as booking_count')
-                        ->join('rooms', 'rooms.room_type_id = room_types.room_type_id')
-                        ->join('reservations', 'reservations.room_id = rooms.room_id')
-                        ->where('reservations.status !=', 'cancelled')
-                        ->groupBy('room_types.room_type_id')
-                        ->orderBy('booking_count', 'DESC')
-                        ->limit($limit);
-
-        if ($hotelId) {
-            $builder->where('room_types.hotel_id', $hotelId);
-        }
-
-        return $builder->findAll();
-    }
-
-    /**
-     * Get room types by price range
-     */
-    public function getRoomTypesByPriceRange($minPrice, $maxPrice, $hotelId = null)
-    {
-        $builder = $this->where('base_price >=', $minPrice)
-                        ->where('base_price <=', $maxPrice)
-                        ->orderBy('base_price', 'ASC');
-
-        if ($hotelId) {
-            $builder->where('hotel_id', $hotelId);
-        }
-
-        return $builder->findAll();
-    }
-
-    /**
-     * Get room types by capacity
-     */
-    public function getRoomTypesByCapacity($capacity, $hotelId = null)
-    {
-        $builder = $this->where('capacity >=', $capacity)
-                        ->orderBy('capacity', 'ASC');
-
-        if ($hotelId) {
-            $builder->where('hotel_id', $hotelId);
-        }
-
-        return $builder->findAll();
-    }
-
-    /**
-     * Clone room type to another hotel
-     */
-    public function cloneRoomType($roomTypeId, $targetHotelId)
+    public function getRoomTypeWithRooms($roomTypeId)
     {
         $roomType = $this->find($roomTypeId);
+        
         if (!$roomType) {
-            return false;
+            return null;
         }
+        
+        $db = \Config\Database::connect();
+        $rooms = $db->table('rooms')
+                   ->where('room_type_id', $roomTypeId)
+                   ->get()
+                   ->getResultArray();
+        
+        $roomType['rooms'] = $rooms;
+        
+        return $roomType;
+    }
 
-        // Remove the primary key and set new hotel_id
-        unset($roomType['room_type_id']);
-        $roomType['hotel_id'] = $targetHotelId;
+    /**
+     * Get available room types for booking
+     */
+    public function getAvailableRoomTypes($hotelId, $checkIn = null, $checkOut = null)
+    {
+        $builder = $this->select('room_types.*, COUNT(rooms.room_id) as available_rooms')
+                       ->join('rooms', 'rooms.room_type_id = room_types.room_type_id')
+                       ->where('room_types.hotel_id', $hotelId)
+                       ->where('rooms.status', 'available');
+        
+        // If dates are provided, exclude rooms that are booked
+        if ($checkIn && $checkOut) {
+            $builder->whereNotExists(function($builder) use ($checkIn, $checkOut) {
+                $builder->select('1')
+                        ->from('bookings')
+                        ->where('bookings.room_id = rooms.room_id')
+                        ->where('bookings.status !=', 'cancelled')
+                        ->groupStart()
+                            ->where('bookings.check_in_date <=', $checkOut)
+                            ->where('bookings.check_out_date >=', $checkIn)
+                        ->groupEnd();
+            });
+        }
+        
+        return $builder->groupBy('room_types.room_type_id')
+                      ->having('available_rooms >', 0)
+                      ->findAll();
+    }
 
-        return $this->insert($roomType);
+    /**
+     * Get room type pricing
+     */
+    public function getRoomTypePricing($roomTypeId, $checkIn = null, $checkOut = null)
+    {
+        $roomType = $this->find($roomTypeId);
+        
+        if (!$roomType) {
+            return null;
+        }
+        
+        // Basic pricing (can be extended for seasonal pricing)
+        $pricing = [
+            'base_price' => $roomType['base_price'],
+            'currency' => 'USD', // Can be made configurable
+            'price_per_night' => $roomType['base_price']
+        ];
+        
+        // Calculate total if dates provided
+        if ($checkIn && $checkOut) {
+            $checkInDate = new \DateTime($checkIn);
+            $checkOutDate = new \DateTime($checkOut);
+            $nights = $checkInDate->diff($checkOutDate)->days;
+            
+            $pricing['nights'] = $nights;
+            $pricing['subtotal'] = $nights * $roomType['base_price'];
+            $pricing['tax_rate'] = 0.10; // 10% tax (configurable)
+            $pricing['tax_amount'] = $pricing['subtotal'] * $pricing['tax_rate'];
+            $pricing['total_amount'] = $pricing['subtotal'] + $pricing['tax_amount'];
+        }
+        
+        return $pricing;
+    }
+
+    /**
+     * Check if room type can be deleted
+     */
+    public function canDelete($roomTypeId)
+    {
+        $db = \Config\Database::connect();
+        
+        // Check if there are rooms of this type
+        $roomCount = $db->table('rooms')->where('room_type_id', $roomTypeId)->countAllResults();
+        
+        if ($roomCount > 0) {
+            return [
+                'can_delete' => false,
+                'reason' => 'Cannot delete room type because there are rooms assigned to it.'
+            ];
+        }
+        
+        return ['can_delete' => true];
     }
 }
