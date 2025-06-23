@@ -33,15 +33,15 @@ class StaffModel extends Model
 
     // Validation
     protected $validationRules      = [
-        'hotel_id'   => 'permit_empty|is_natural_no_zero',
-        'manager_id' => 'permit_empty|is_natural_no_zero',
-        'full_name'  => 'required|max_length[100]',
-        'role'       => 'required|max_length[50]',
-        'phone'      => 'permit_empty|max_length[20]',
-        'email'      => 'permit_empty|valid_email|max_length[100]',
-        'hire_date'  => 'permit_empty|valid_date',
-        'username'   => 'required|min_length[3]|max_length[50]|is_unique[staff.username,staff_id,{staff_id}]',
-        'password_hash' => 'required|min_length[8]'
+        'hotel_id'      => 'permit_empty|is_natural_no_zero',
+        'manager_id'    => 'permit_empty|is_natural_no_zero',
+        'full_name'     => 'required|max_length[100]',
+        'role'          => 'required|max_length[50]',
+        'phone'         => 'permit_empty|max_length[20]',
+        'email'         => 'permit_empty|valid_email|max_length[100]',
+        'hire_date'     => 'permit_empty|valid_date',
+        'username'      => 'required|min_length[3]|max_length[50]|is_unique[staff.username,staff_id,{staff_id}]',
+        'password_hash' => 'permit_empty'
     ];
     protected $validationMessages   = [
         'full_name' => [
@@ -52,25 +52,18 @@ class StaffModel extends Model
             'required'    => 'Role is required',
             'max_length'  => 'Role cannot exceed 50 characters'
         ],
-        'phone' => [
-            'max_length'  => 'Phone number cannot exceed 20 characters'
-        ],
-        'email' => [
-            'valid_email' => 'Please enter a valid email address',
-            'max_length'  => 'Email cannot exceed 100 characters'
-        ],
-        'hire_date' => [
-            'valid_date'  => 'Please enter a valid hire date'
-        ],
         'username' => [
             'required'    => 'Username is required',
             'min_length'  => 'Username must be at least 3 characters long',
             'max_length'  => 'Username cannot exceed 50 characters',
             'is_unique'   => 'Username already exists'
         ],
-        'password_hash' => [
-            'required'    => 'Password is required',
-            'min_length'  => 'Password must be at least 8 characters long'
+        'email' => [
+            'valid_email' => 'Please enter a valid email address',
+            'max_length'  => 'Email cannot exceed 100 characters'
+        ],
+        'phone' => [
+            'max_length'  => 'Phone number cannot exceed 20 characters'
         ]
     ];
     protected $skipValidation       = false;
@@ -88,7 +81,7 @@ class StaffModel extends Model
     protected $afterDelete    = [];
 
     /**
-     * Hash password before insert or update
+     * Hash password before insert/update
      */
     protected function hashPassword(array $data)
     {
@@ -100,16 +93,25 @@ class StaffModel extends Model
     }
 
     /**
-     * Get staff with hotel and manager details
+     * Verify staff credentials
+     */
+    public function verifyCredentials($username, $password)
+    {
+        $staff = $this->where('username', $username)->first();
+
+        if ($staff && password_verify($password, $staff['password_hash'])) {
+            return $staff;
+        }
+
+        return false;
+    }
+
+    /**
+     * Get staff with details
      */
     public function getStaffWithDetails($staffId)
     {
-        return $this->select('staff.*,
-                            hotels.name as hotel_name,
-                            hotels.city as hotel_city,
-                            hotels.country as hotel_country,
-                            managers.full_name as manager_name,
-                            managers.email as manager_email')
+        return $this->select('staff.*, hotels.name as hotel_name, managers.username as manager_name')
                     ->join('hotels', 'hotels.hotel_id = staff.hotel_id', 'left')
                     ->join('managers', 'managers.manager_id = staff.manager_id', 'left')
                     ->where('staff.staff_id', $staffId)
@@ -121,21 +123,16 @@ class StaffModel extends Model
      */
     public function getStaffByHotel($hotelId, $role = null, $managerId = null)
     {
-        $builder = $this->select('staff.*,
-                                managers.full_name as manager_name')
-                        ->join('managers', 'managers.manager_id = staff.manager_id', 'left')
-                        ->where('staff.hotel_id', $hotelId)
-                        ->orderBy('staff.role', 'ASC')
-                        ->orderBy('staff.full_name', 'ASC');
-
+        $builder = $this->where('hotel_id', $hotelId);
+        
         if ($role) {
-            $builder->where('staff.role', $role);
+            $builder->where('role', $role);
         }
-
+        
         if ($managerId) {
-            $builder->where('staff.manager_id', $managerId);
+            $builder->where('manager_id', $managerId);
         }
-
+        
         return $builder->findAll();
     }
 
@@ -144,13 +141,7 @@ class StaffModel extends Model
      */
     public function getStaffByManager($managerId)
     {
-        return $this->select('staff.*,
-                            hotels.name as hotel_name')
-                    ->join('hotels', 'hotels.hotel_id = staff.hotel_id', 'left')
-                    ->where('staff.manager_id', $managerId)
-                    ->orderBy('staff.role', 'ASC')
-                    ->orderBy('staff.full_name', 'ASC')
-                    ->findAll();
+        return $this->where('manager_id', $managerId)->findAll();
     }
 
     /**
@@ -158,18 +149,12 @@ class StaffModel extends Model
      */
     public function getStaffByRole($role, $hotelId = null)
     {
-        $builder = $this->select('staff.*,
-                                hotels.name as hotel_name,
-                                managers.full_name as manager_name')
-                        ->join('hotels', 'hotels.hotel_id = staff.hotel_id', 'left')
-                        ->join('managers', 'managers.manager_id = staff.manager_id', 'left')
-                        ->where('staff.role', $role)
-                        ->orderBy('staff.full_name', 'ASC');
-
+        $builder = $this->where('role', $role);
+        
         if ($hotelId) {
-            $builder->where('staff.hotel_id', $hotelId);
+            $builder->where('hotel_id', $hotelId);
         }
-
+        
         return $builder->findAll();
     }
 
@@ -178,14 +163,12 @@ class StaffModel extends Model
      */
     public function getAvailableRoles($hotelId = null)
     {
-        $builder = $this->select('role')
-                        ->distinct()
-                        ->orderBy('role', 'ASC');
-
+        $builder = $this->select('role')->distinct();
+        
         if ($hotelId) {
             $builder->where('hotel_id', $hotelId);
         }
-
+        
         return $builder->findAll();
     }
 
@@ -195,30 +178,17 @@ class StaffModel extends Model
     public function getStaffStatistics($hotelId = null, $managerId = null)
     {
         $builder = $this->select('role, COUNT(*) as count')
-                        ->groupBy('role')
-                        ->orderBy('role', 'ASC');
-
+                        ->groupBy('role');
+        
         if ($hotelId) {
             $builder->where('hotel_id', $hotelId);
         }
-
+        
         if ($managerId) {
             $builder->where('manager_id', $managerId);
         }
-
-        $results = $builder->findAll();
-
-        $stats = [
-            'total_staff' => 0,
-            'by_role' => []
-        ];
-
-        foreach ($results as $result) {
-            $stats['by_role'][$result['role']] = $result['count'];
-            $stats['total_staff'] += $result['count'];
-        }
-
-        return $stats;
+        
+        return $builder->findAll();
     }
 
     /**
@@ -226,28 +196,18 @@ class StaffModel extends Model
      */
     public function getStaffWithTaskCounts($hotelId = null, $managerId = null)
     {
-        $builder = $this->select('staff.*,
-                                COUNT(staff_tasks.task_id) as total_tasks,
-                                COUNT(CASE WHEN staff_tasks.status = "assigned" THEN 1 END) as assigned_tasks,
-                                COUNT(CASE WHEN staff_tasks.status = "in_progress" THEN 1 END) as inprogress_tasks,
-                                COUNT(CASE WHEN staff_tasks.status = "completed" THEN 1 END) as completed_tasks,
-                                COUNT(CASE WHEN staff_tasks.status = "overdue" THEN 1 END) as overdue_tasks,
-                                hotels.name as hotel_name,
-                                managers.full_name as manager_name')
+        $builder = $this->select('staff.*, COUNT(staff_tasks.task_id) as task_count')
                         ->join('staff_tasks', 'staff_tasks.staff_id = staff.staff_id', 'left')
-                        ->join('hotels', 'hotels.hotel_id = staff.hotel_id', 'left')
-                        ->join('managers', 'managers.manager_id = staff.manager_id', 'left')
-                        ->groupBy('staff.staff_id')
-                        ->orderBy('staff.full_name', 'ASC');
-
+                        ->groupBy('staff.staff_id');
+        
         if ($hotelId) {
             $builder->where('staff.hotel_id', $hotelId);
         }
-
+        
         if ($managerId) {
             $builder->where('staff.manager_id', $managerId);
         }
-
+        
         return $builder->findAll();
     }
 
@@ -257,214 +217,18 @@ class StaffModel extends Model
     public function getStaffTasks($staffId, $status = null, $limit = null, $offset = null)
     {
         $builder = $this->db->table('staff_tasks')
-                           ->select('staff_tasks.*,
-                                   managers.full_name as manager_name,
-                                   hotels.name as hotel_name')
-                           ->join('managers', 'managers.manager_id = staff_tasks.manager_id', 'left')
-                           ->join('hotels', 'hotels.hotel_id = staff_tasks.hotel_id', 'left')
-                           ->where('staff_tasks.staff_id', $staffId)
-                           ->orderBy('staff_tasks.due_date', 'ASC');
-
+                           ->select('staff_tasks.*, staff.full_name as staff_name')
+                           ->join('staff', 'staff.staff_id = staff_tasks.staff_id')
+                           ->where('staff_tasks.staff_id', $staffId);
+        
         if ($status) {
             $builder->where('staff_tasks.status', $status);
         }
-
+        
         if ($limit) {
             $builder->limit($limit, $offset);
         }
-
+        
         return $builder->get()->getResultArray();
-    }
-
-    /**
-     * Get staff performance metrics
-     */
-    public function getStaffPerformance($staffId, $dateFrom = null, $dateTo = null)
-    {
-        $staff = $this->find($staffId);
-        if (!$staff) {
-            return null;
-        }
-
-        $builder = $this->db->table('staff_tasks')
-                           ->select('status, COUNT(*) as count')
-                           ->where('staff_id', $staffId)
-                           ->groupBy('status');
-
-        if ($dateFrom) {
-            $builder->where('assigned_date >=', $dateFrom);
-        }
-
-        if ($dateTo) {
-            $builder->where('assigned_date <=', $dateTo);
-        }
-
-        $results = $builder->get()->getResultArray();
-
-        $performance = [
-            'staff_info' => $staff,
-            'task_stats' => [
-                'assigned' => 0,
-                'in_progress' => 0,
-                'completed' => 0,
-                'overdue' => 0,
-                'total' => 0
-            ]
-        ];
-
-        foreach ($results as $result) {
-            $performance['task_stats'][$result['status']] = $result['count'];
-            $performance['task_stats']['total'] += $result['count'];
-        }
-
-        // Calculate completion rate
-        $performance['completion_rate'] = $performance['task_stats']['total'] > 0 ?
-            ($performance['task_stats']['completed'] / $performance['task_stats']['total']) * 100 : 0;
-
-        return $performance;
-    }
-
-    /**
-     * Search staff
-     */
-    public function searchStaff($searchTerm, $hotelId = null, $role = null, $managerId = null, $limit = 20, $offset = 0)
-    {
-        $builder = $this->select('staff.*,
-                                hotels.name as hotel_name,
-                                managers.full_name as manager_name')
-                        ->join('hotels', 'hotels.hotel_id = staff.hotel_id', 'left')
-                        ->join('managers', 'managers.manager_id = staff.manager_id', 'left');
-
-        if (!empty($searchTerm)) {
-            $builder->groupStart()
-                   ->like('staff.full_name', $searchTerm)
-                   ->orLike('staff.role', $searchTerm)
-                   ->orLike('staff.email', $searchTerm)
-                   ->orLike('staff.phone', $searchTerm)
-                   ->groupEnd();
-        }
-
-        if ($hotelId) {
-            $builder->where('staff.hotel_id', $hotelId);
-        }
-
-        if ($role) {
-            $builder->where('staff.role', $role);
-        }
-
-        if ($managerId) {
-            $builder->where('staff.manager_id', $managerId);
-        }
-
-        return $builder->orderBy('staff.full_name', 'ASC')
-                      ->limit($limit, $offset)
-                      ->findAll();
-    }
-
-    /**
-     * Get recent hires
-     */
-    public function getRecentHires($hotelId = null, $days = 30, $limit = 10)
-    {
-        $dateFrom = date('Y-m-d', strtotime("-{$days} days"));
-
-        $builder = $this->select('staff.*,
-                                hotels.name as hotel_name,
-                                managers.full_name as manager_name')
-                        ->join('hotels', 'hotels.hotel_id = staff.hotel_id', 'left')
-                        ->join('managers', 'managers.manager_id = staff.manager_id', 'left')
-                        ->where('staff.hire_date >=', $dateFrom)
-                        ->orderBy('staff.hire_date', 'DESC')
-                        ->limit($limit);
-
-        if ($hotelId) {
-            $builder->where('staff.hotel_id', $hotelId);
-        }
-
-        return $builder->findAll();
-    }
-
-    /**
-     * Get staff anniversaries
-     */
-    public function getStaffAnniversaries($hotelId = null, $month = null)
-    {
-        if (!$month) {
-            $month = date('m');
-        }
-
-        $builder = $this->select('staff.*,
-                                hotels.name as hotel_name,
-                                managers.full_name as manager_name,
-                                YEAR(CURDATE()) - YEAR(hire_date) as years_of_service')
-                        ->join('hotels', 'hotels.hotel_id = staff.hotel_id', 'left')
-                        ->join('managers', 'managers.manager_id = staff.manager_id', 'left')
-                        ->where('MONTH(hire_date)', $month)
-                        ->where('hire_date IS NOT NULL')
-                        ->orderBy('hire_date', 'ASC');
-
-        if ($hotelId) {
-            $builder->where('staff.hotel_id', $hotelId);
-        }
-
-        return $builder->findAll();
-    }
-
-    /**
-     * Update staff role
-     */
-    public function updateStaffRole($staffId, $newRole)
-    {
-        return $this->update($staffId, ['role' => $newRole]);
-    }
-
-    /**
-     * Transfer staff to different manager
-     */
-    public function transferStaff($staffId, $newManagerId)
-    {
-        return $this->update($staffId, ['manager_id' => $newManagerId]);
-    }
-
-    /**
-     * Get staff workload (based on active tasks)
-     */
-    public function getStaffWorkload($hotelId = null, $managerId = null)
-    {
-        $builder = $this->select('staff.*,
-                                COUNT(CASE WHEN staff_tasks.status IN ("assigned", "in_progress") THEN 1 END) as active_tasks,
-                                hotels.name as hotel_name')
-                        ->join('staff_tasks', 'staff_tasks.staff_id = staff.staff_id', 'left')
-                        ->join('hotels', 'hotels.hotel_id = staff.hotel_id', 'left')
-                        ->groupBy('staff.staff_id')
-                        ->orderBy('active_tasks', 'DESC');
-
-        if ($hotelId) {
-            $builder->where('staff.hotel_id', $hotelId);
-        }
-
-        if ($managerId) {
-            $builder->where('staff.manager_id', $managerId);
-        }
-
-        return $builder->findAll();
-    }
-
-    /**
-     * Get staff without manager
-     */
-    public function getStaffWithoutManager($hotelId = null)
-    {
-        $builder = $this->select('staff.*,
-                                hotels.name as hotel_name')
-                        ->join('hotels', 'hotels.hotel_id = staff.hotel_id', 'left')
-                        ->where('staff.manager_id IS NULL')
-                        ->orderBy('staff.full_name', 'ASC');
-
-        if ($hotelId) {
-            $builder->where('staff.hotel_id', $hotelId);
-        }
-
-        return $builder->findAll();
     }
 }

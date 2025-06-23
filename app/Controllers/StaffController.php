@@ -4,8 +4,8 @@ namespace App\Controllers;
 
 use CodeIgniter\Controller;
 use App\Models\StaffModel;
-use App\Models\ManagerModel;  // To verify and get manager details
-use App\Models\HotelModel;   // To ensure hotel linkage
+use App\Models\ManagerModel;
+use App\Models\HotelModel;
 
 class StaffController extends Controller
 {
@@ -21,7 +21,7 @@ class StaffController extends Controller
         
         // Ensure the user is a logged-in manager
         if (!session()->get('manager_id')) {
-            return redirect()->to('/manager/login');  // Redirect to manager login if not authenticated
+            return redirect()->to('/manager/login');
         }
     }
 
@@ -33,7 +33,7 @@ class StaffController extends Controller
 
     public function create()
     {
-        return view('managers/staff/create');  // Load the create form
+        return view('managers/staff/create');
     }
 
     public function store()
@@ -41,30 +41,53 @@ class StaffController extends Controller
         // Get the current manager's ID from session
         $managerId = session()->get('manager_id');
         
-        // Fetch the manager's hotel(s) – assuming a manager is linked to one hotel
-        $manager = $this->managerModel->find($managerId);
-        if (!$manager || empty($manager['hotel_id'])) {  // Assuming hotel_id is in manager data; adjust if needed
-            return redirect()->back()->with('error', 'No hotel associated with your account.');
+        // Get the hotel managed by this manager (hotels table has manager_id)
+        $hotel = $this->hotelModel->where('manager_id', $managerId)->first();
+        
+        if (!$hotel) {
+            return redirect()->back()->with('error', 'No hotel associated with your manager account. Please contact admin.');
         }
         
-        $hotelId = $manager['hotel_id'];  // Link staff to this hotel
+        $hotelId = $hotel['hotel_id'];
+        
+        // Validate input data first
+        $validation = \Config\Services::validation();
+        $validation->setRules([
+            'full_name' => 'required|max_length[100]',
+            'role'      => 'required|max_length[50]',
+            'phone'     => 'permit_empty|max_length[20]',
+            'email'     => 'permit_empty|valid_email|max_length[100]',
+            'hire_date' => 'permit_empty|valid_date',
+            'username'  => 'required|min_length[3]|max_length[50]|is_unique[staff.username]',
+            'password'  => 'required|min_length[8]'
+        ]);
+        
+        if (!$validation->withRequest($this->request)->run()) {
+            return redirect()->back()->withInput()->with('errors', $validation->getErrors());
+        }
         
         $data = [
-            'hotel_id'     => $hotelId,  // Link to the manager's hotel
-            'manager_id'   => $managerId,  // Link to the current manager
-            'full_name'    => $this->request->getPost('full_name'),
-            'role'         => $this->request->getPost('role'),
-            'phone'        => $this->request->getPost('phone'),
-            'email'        => $this->request->getPost('email'),
-            'hire_date'    => $this->request->getPost('hire_date'),
-            'username'     => $this->request->getPost('username'),
-            'password'     => $this->request->getPost('password'),  // This will be hashed in the model
+            'hotel_id'   => $hotelId,
+            'manager_id' => $managerId,
+            'full_name'  => $this->request->getPost('full_name'),
+            'role'       => $this->request->getPost('role'),
+            'phone'      => $this->request->getPost('phone'),
+            'email'      => $this->request->getPost('email'),
+            'hire_date'  => $this->request->getPost('hire_date'),
+            'username'   => $this->request->getPost('username'),
+            'password'   => $this->request->getPost('password'), // Will be hashed in model
         ];
         
-        if ($this->staffModel->insert($data)) {
-            return redirect()->to('/manager/staff')->with('success', 'Staff member created successfully.');
-        } else {
-            return redirect()->back()->with('errors', $this->staffModel->errors());
+        try {
+            if ($this->staffModel->insert($data)) {
+                return redirect()->to('/manager/staff')->with('success', 'Staff member created successfully.');
+            } else {
+                $errors = $this->staffModel->errors();
+                return redirect()->back()->withInput()->with('errors', $errors);
+            }
+        } catch (\Exception $e) {
+            log_message('error', 'Staff creation failed: ' . $e->getMessage());
+            return redirect()->back()->withInput()->with('error', 'Failed to create staff member: ' . $e->getMessage());
         }
     }
 
@@ -76,7 +99,7 @@ class StaffController extends Controller
             return redirect()->to('/manager/staff')->with('error', 'Staff member not found or not authorized.');
         }
         
-        return view('managers/staff/show', ['staff' => $staff]);  // Assuming you have a show.php view
+        return view('managers/staff/show', ['staff' => $staff]);
     }
 
     public function edit($id = null)
@@ -87,7 +110,7 @@ class StaffController extends Controller
             return redirect()->to('/manager/staff')->with('error', 'Staff member not found or not authorized.');
         }
         
-        return view('managers/staff/edit', ['staff' => $staff]);  // Assuming you have an edit.php view
+        return view('managers/staff/edit', ['staff' => $staff]);
     }
 
     public function update($id = null)
@@ -100,17 +123,17 @@ class StaffController extends Controller
         }
         
         $data = [
-            'full_name'    => $this->request->getPost('full_name'),
-            'role'         => $this->request->getPost('role'),
-            'phone'        => $this->request->getPost('phone'),
-            'email'        => $this->request->getPost('email'),
-            'hire_date'    => $this->request->getPost('hire_date'),
-            // Do not allow changing username or password here; handle separately if needed
+            'full_name' => $this->request->getPost('full_name'),
+            'role'      => $this->request->getPost('role'),
+            'phone'     => $this->request->getPost('phone'),
+            'email'     => $this->request->getPost('email'),
+            'hire_date' => $this->request->getPost('hire_date'),
         ];
         
         // If password is being updated
-        if ($this->request->getPost('password')) {
-            $data['password'] = $this->request->getPost('password');  // Model will hash this
+        $password = $this->request->getPost('password');
+        if (!empty($password)) {
+            $data['password'] = $password; // Model will hash this
         }
         
         if ($this->staffModel->update($id, $data)) {
