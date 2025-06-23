@@ -69,28 +69,16 @@ class StaffModel extends Model
     protected $skipValidation       = false;
     protected $cleanValidationRules = true;
 
-    // Callbacks
+    // Callbacks - Remove password hashing callback since we do it manually
     protected $allowCallbacks = true;
-    protected $beforeInsert   = ['hashPassword'];
+    protected $beforeInsert   = [];
     protected $afterInsert    = [];
-    protected $beforeUpdate   = ['hashPassword'];
+    protected $beforeUpdate   = [];
     protected $afterUpdate    = [];
     protected $beforeFind     = [];
     protected $afterFind      = [];
     protected $beforeDelete   = [];
     protected $afterDelete    = [];
-
-    /**
-     * Hash password before insert/update
-     */
-    protected function hashPassword(array $data)
-    {
-        if (isset($data['data']['password'])) {
-            $data['data']['password_hash'] = password_hash($data['data']['password'], PASSWORD_DEFAULT);
-            unset($data['data']['password']);
-        }
-        return $data;
-    }
 
     /**
      * Verify staff credentials
