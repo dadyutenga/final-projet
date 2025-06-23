@@ -54,6 +54,17 @@ $routes->group('manager', ['namespace' => 'App\Controllers'], function($routes) 
     $routes->get('roomtypes/edit/(:num)', 'RoomTypeController::edit/$1');
     $routes->post('roomtypes/update/(:num)', 'RoomTypeController::update/$1');
     $routes->delete('roomtypes/destroy/(:num)', 'RoomTypeController::destroy/$1');
+
+    
+    // Room management routes
+    $routes->get('rooms', 'RoomController::index');
+    $routes->get('rooms/create', 'RoomController::create');
+    $routes->post('rooms/store', 'RoomController::store');
+    $routes->get('rooms/show/(:num)', 'RoomController::show/$1');
+    $routes->get('rooms/edit/(:num)', 'RoomController::edit/$1');
+    $routes->post('rooms/update/(:num)', 'RoomController::update/$1');
+    $routes->delete('rooms/destroy/(:num)', 'RoomController::destroy/$1');
+    $routes->post('rooms/bulk-status-update', 'RoomController::bulkStatusUpdate');
 });
 
 

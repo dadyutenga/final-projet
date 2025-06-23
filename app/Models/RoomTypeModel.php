@@ -83,6 +83,14 @@ class RoomTypeModel extends Model
     }
 
     /**
+     * Get room types by hotel
+     */
+    public function getRoomTypesByHotel($hotelId)
+    {
+        return $this->where('hotel_id', $hotelId)->findAll();
+    }
+
+    /**
      * Get room type statistics
      */
     public function getRoomTypeStatistics($roomTypeId)
@@ -105,29 +113,24 @@ class RoomTypeModel extends Model
                        ->getResultArray();
         
         // Get booking statistics (if bookings table exists)
-        $bookingStats = $db->table('bookings b')
-                          ->select('COUNT(DISTINCT b.booking_id) as total_bookings,
-                                   AVG(DATEDIFF(b.check_out_date, b.check_in_date)) as avg_stay_duration,
-                                   SUM(b.total_amount) as total_revenue')
-                          ->join('rooms r', 'r.room_id = b.room_id')
-                          ->where('r.room_type_id', $roomTypeId)
-                          ->where('b.status !=', 'cancelled')
-                          ->get()
-                          ->getRowArray();
+        $bookingStats = null;
+        if ($db->tableExists('bookings')) {
+            $bookingStats = $db->table('bookings b')
+                              ->select('COUNT(DISTINCT b.booking_id) as total_bookings,
+                                       AVG(DATEDIFF(b.check_out_date, b.check_in_date)) as avg_stay_duration,
+                                       SUM(b.total_amount) as total_revenue')
+                              ->join('rooms r', 'r.room_id = b.room_id')
+                              ->where('r.room_type_id', $roomTypeId)
+                              ->where('b.status !=', 'cancelled')
+                              ->get()
+                              ->getRowArray();
+        }
         
         return [
             'room_type' => $roomType,
             'room_stats' => $roomStats,
             'booking_stats' => $bookingStats
         ];
-    }
-
-    /**
-     * Get room types by hotel
-     */
-    public function getRoomTypesByHotel($hotelId)
-    {
-        return $this->where('hotel_id', $hotelId)->findAll();
     }
 
     /**
@@ -150,69 +153,6 @@ class RoomTypeModel extends Model
         $roomType['rooms'] = $rooms;
         
         return $roomType;
-    }
-
-    /**
-     * Get available room types for booking
-     */
-    public function getAvailableRoomTypes($hotelId, $checkIn = null, $checkOut = null)
-    {
-        $builder = $this->select('room_types.*, COUNT(rooms.room_id) as available_rooms')
-                       ->join('rooms', 'rooms.room_type_id = room_types.room_type_id')
-                       ->where('room_types.hotel_id', $hotelId)
-                       ->where('rooms.status', 'available');
-        
-        // If dates are provided, exclude rooms that are booked
-        if ($checkIn && $checkOut) {
-            $builder->whereNotExists(function($builder) use ($checkIn, $checkOut) {
-                $builder->select('1')
-                        ->from('bookings')
-                        ->where('bookings.room_id = rooms.room_id')
-                        ->where('bookings.status !=', 'cancelled')
-                        ->groupStart()
-                            ->where('bookings.check_in_date <=', $checkOut)
-                            ->where('bookings.check_out_date >=', $checkIn)
-                        ->groupEnd();
-            });
-        }
-        
-        return $builder->groupBy('room_types.room_type_id')
-                      ->having('available_rooms >', 0)
-                      ->findAll();
-    }
-
-    /**
-     * Get room type pricing
-     */
-    public function getRoomTypePricing($roomTypeId, $checkIn = null, $checkOut = null)
-    {
-        $roomType = $this->find($roomTypeId);
-        
-        if (!$roomType) {
-            return null;
-        }
-        
-        // Basic pricing (can be extended for seasonal pricing)
-        $pricing = [
-            'base_price' => $roomType['base_price'],
-            'currency' => 'USD', // Can be made configurable
-            'price_per_night' => $roomType['base_price']
-        ];
-        
-        // Calculate total if dates provided
-        if ($checkIn && $checkOut) {
-            $checkInDate = new \DateTime($checkIn);
-            $checkOutDate = new \DateTime($checkOut);
-            $nights = $checkInDate->diff($checkOutDate)->days;
-            
-            $pricing['nights'] = $nights;
-            $pricing['subtotal'] = $nights * $roomType['base_price'];
-            $pricing['tax_rate'] = 0.10; // 10% tax (configurable)
-            $pricing['tax_amount'] = $pricing['subtotal'] * $pricing['tax_rate'];
-            $pricing['total_amount'] = $pricing['subtotal'] + $pricing['tax_amount'];
-        }
-        
-        return $pricing;
     }
 
     /**
