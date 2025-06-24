@@ -85,6 +85,6 @@ $routes->group('staff', ['namespace' => 'App\Controllers'], function($routes) {
     $routes->get('profile', 'StaffAuthController::profile');
     $routes->post('profile', 'StaffAuthController::updateProfile');
     $routes->post('change-password', 'StaffAuthController::changePassword');
-    $routes->get('tasks', 'StaffTaskController::index'); // For staff task management
+   
 });
 

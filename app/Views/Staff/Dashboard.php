@@ -273,7 +273,7 @@
             border-bottom: 1px solid var(--border-color);
             display: flex;
             align-items: center;
-            justify-content: between;
+            justify-content: space-between;
         }
 
         .card-title {
@@ -399,6 +399,43 @@
             background: var(--primary-color);
             color: var(--white);
         }
+
+        /* Quick Actions */
+        .quick-actions {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        .quick-action {
+            background: var(--white);
+            padding: 1rem;
+            border-radius: 8px;
+            text-align: center;
+            text-decoration: none;
+            color: var(--dark-gray);
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+        }
+
+        .quick-action:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+            color: var(--primary-color);
+        }
+
+        .quick-action i {
+            font-size: 1.5rem;
+            margin-bottom: 0.5rem;
+            color: var(--primary-color);
+        }
+
+        .quick-action span {
+            display: block;
+            font-size: 0.9rem;
+            font-weight: 500;
+        }
     </style>
 </head>
 <body>
@@ -406,54 +443,15 @@
         <i class="fas fa-bars"></i>
     </button>
 
-    <div class="sidebar-overlay" onclick="closeSidebar()"></div>
-
-    <div class="sidebar" id="sidebar">
-        <div class="sidebar-header">
-            <div class="sidebar-logo">
-                <i class="fas fa-hotel"></i>
-                Hotel Management
-            </div>
-            <div class="sidebar-subtitle">Staff Dashboard</div>
-        </div>
-
-        <div class="user-info">
-            <div class="user-avatar">
-                <?= strtoupper(substr($staff['full_name'], 0, 2)) ?>
-            </div>
-            <div class="user-name"><?= esc($staff['full_name']) ?></div>
-            <div class="user-role"><?= esc($staff['role']) ?></div>
-        </div>
-
-        <nav class="sidebar-nav">
-            <a href="<?= base_url('staff/dashboard') ?>" class="nav-item active">
-                <i class="fas fa-tachometer-alt"></i>
-                Dashboard
-            </a>
-            <a href="<?= base_url('staff/tasks') ?>" class="nav-item">
-                <i class="fas fa-tasks"></i>
-                My Tasks
-                <?php if ($taskStats['assigned'] + $taskStats['in_progress'] > 0): ?>
-                    <span class="badge"><?= $taskStats['assigned'] + $taskStats['in_progress'] ?></span>
-                <?php endif; ?>
-            </a>
-            <a href="<?= base_url('staff/profile') ?>" class="nav-item">
-                <i class="fas fa-user"></i>
-                Profile
-            </a>
-            <a href="<?= base_url('staff/logout') ?>" class="nav-item">
-                <i class="fas fa-sign-out-alt"></i>
-                Logout
-            </a>
-        </nav>
-    </div>
+    <!-- Include the shared sidebar -->
+    <?= $this->include('staff/shared/sidebar') ?>
 
     <div class="main-content">
         <div class="page-header">
             <div>
                 <h1>Welcome back, <?= esc($staff['full_name']) ?>!</h1>
                 <div class="welcome-time">
-                    <?= date('l, F j, Y • g:i A') ?> • <?= esc($staff['hotel_name']) ?>
+                    <?= date('l, F j, Y • g:i A') ?> • <?= esc($staff['hotel_name'] ?? 'Hotel') ?>
                 </div>
             </div>
         </div>
@@ -465,26 +463,46 @@
             </div>
         <?php endif; ?>
 
+        <!-- Quick Actions -->
+        <div class="quick-actions">
+            <a href="<?= base_url('staff/tasks') ?>" class="quick-action">
+                <i class="fas fa-tasks"></i>
+                <span>View Tasks</span>
+            </a>
+            <a href="<?= base_url('staff/tasks/new') ?>" class="quick-action">
+                <i class="fas fa-plus-circle"></i>
+                <span>Start Task</span>
+            </a>
+            <a href="<?= base_url('staff/rooms') ?>" class="quick-action">
+                <i class="fas fa-bed"></i>
+                <span>Check Rooms</span>
+            </a>
+            <a href="<?= base_url('staff/maintenance') ?>" class="quick-action">
+                <i class="fas fa-tools"></i>
+                <span>Maintenance</span>
+            </a>
+        </div>
+
         <!-- Task Statistics -->
         <div class="stats-grid">
             <div class="stat-card">
                 <div class="stat-icon assigned"><i class="fas fa-clipboard-list"></i></div>
-                <div class="stat-value assigned"><?= $taskStats['assigned'] ?></div>
+                <div class="stat-value assigned"><?= $taskStats['assigned'] ?? 0 ?></div>
                 <div class="stat-label">Assigned Tasks</div>
             </div>
             <div class="stat-card">
                 <div class="stat-icon in_progress"><i class="fas fa-clock"></i></div>
-                <div class="stat-value in_progress"><?= $taskStats['in_progress'] ?></div>
+                <div class="stat-value in_progress"><?= $taskStats['in_progress'] ?? 0 ?></div>
                 <div class="stat-label">In Progress</div>
             </div>
             <div class="stat-card">
                 <div class="stat-icon completed"><i class="fas fa-check-circle"></i></div>
-                <div class="stat-value completed"><?= $taskStats['completed'] ?></div>
+                <div class="stat-value completed"><?= $taskStats['completed'] ?? 0 ?></div>
                 <div class="stat-label">Completed</div>
             </div>
             <div class="stat-card">
                 <div class="stat-icon overdue"><i class="fas fa-exclamation-triangle"></i></div>
-                <div class="stat-value overdue"><?= count($overdueTasks) ?></div>
+                <div class="stat-value overdue"><?= count($overdueTasks ?? []) ?></div>
                 <div class="stat-label">Overdue</div>
             </div>
         </div>
@@ -516,7 +534,7 @@
                                     <?= esc($task['task_description']) ?>
                                 </div>
                                 <div class="task-meta">
-                                    <span><i class="fas fa-user"></i> <?= esc($task['assigned_by']) ?></span>
+                                    <span><i class="fas fa-user"></i> <?= esc($task['assigned_by'] ?? 'Manager') ?></span>
                                     <span><i class="fas fa-calendar"></i> Due: <?= date('M j, Y', strtotime($task['due_date'])) ?></span>
                                 </div>
                             </div>
@@ -603,7 +621,10 @@
 
         // Auto refresh task counts every 5 minutes
         setInterval(function() {
-            location.reload();
+            // Only refresh if user is active
+            if (document.hasFocus()) {
+                location.reload();
+            }
         }, 300000);
     </script>
 </body>
