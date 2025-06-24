@@ -162,32 +162,23 @@ class StaffTaskModel extends Model
     }
 
     /**
-     * Get tasks by manager
+     * Get tasks assigned by a manager
      */
-    public function getTasksByManager($managerId, $status = null, $hotelId = null, $limit = null, $offset = null)
+    public function getTasksByManager($managerId, $status = null, $hotelId = null)
     {
-        $builder = $this->select('staff_tasks.*,
-                                staff.full_name as staff_name,
-                                staff.role as staff_role,
-                                hotels.name as hotel_name')
-                        ->join('staff', 'staff.staff_id = staff_tasks.staff_id', 'left')
-                        ->join('hotels', 'hotels.hotel_id = staff_tasks.hotel_id', 'left')
-                        ->where('staff_tasks.manager_id', $managerId)
-                        ->orderBy('staff_tasks.due_date', 'ASC');
-
+        $builder = $this->select('staff_tasks.*, staff.full_name as staff_name, staff.role as staff_role')
+                       ->join('staff', 'staff.staff_id = staff_tasks.staff_id')
+                       ->where('staff_tasks.manager_id', $managerId);
+        
         if ($status) {
             $builder->where('staff_tasks.status', $status);
         }
-
+        
         if ($hotelId) {
-            $builder->where('staff_tasks.hotel_id', $hotelId);
+            $builder->where('staff.hotel_id', $hotelId);
         }
-
-        if ($limit) {
-            $builder->limit($limit, $offset);
-        }
-
-        return $builder->findAll();
+        
+        return $builder->orderBy('staff_tasks.assigned_date', 'DESC')->findAll();
     }
 
     /**
@@ -220,136 +211,24 @@ class StaffTaskModel extends Model
     }
 
     /**
-     * Get overdue tasks
+     * Get task statistics for a hotel/manager
      */
-    public function getOverdueTasks($hotelId = null, $managerId = null, $staffId = null)
-    {
-        $builder = $this->select('staff_tasks.*,
-                                staff.full_name as staff_name,
-                                staff.role as staff_role,
-                                managers.full_name as manager_name,
-                                hotels.name as hotel_name')
-                        ->join('staff', 'staff.staff_id = staff_tasks.staff_id', 'left')
-                        ->join('managers', 'managers.manager_id = staff_tasks.manager_id', 'left')
-                        ->join('hotels', 'hotels.hotel_id = staff_tasks.hotel_id', 'left')
-                        ->where('staff_tasks.status', 'overdue')
-                        ->orderBy('staff_tasks.due_date', 'ASC');
-
-        if ($hotelId) {
-            $builder->where('staff_tasks.hotel_id', $hotelId);
-        }
-
-        if ($managerId) {
-            $builder->where('staff_tasks.manager_id', $managerId);
-        }
-
-        if ($staffId) {
-            $builder->where('staff_tasks.staff_id', $staffId);
-        }
-
-        return $builder->findAll();
-    }
-
-    /**
-     * Get tasks due today
-     */
-    public function getTasksDueToday($hotelId = null, $managerId = null, $staffId = null)
-    {
-        $today = date('Y-m-d');
-
-        $builder = $this->select('staff_tasks.*,
-                                staff.full_name as staff_name,
-                                staff.role as staff_role,
-                                managers.full_name as manager_name,
-                                hotels.name as hotel_name')
-                        ->join('staff', 'staff.staff_id = staff_tasks.staff_id', 'left')
-                        ->join('managers', 'managers.manager_id = staff_tasks.manager_id', 'left')
-                        ->join('hotels', 'hotels.hotel_id = staff_tasks.hotel_id', 'left')
-                        ->where('DATE(staff_tasks.due_date)', $today)
-                        ->whereNotIn('staff_tasks.status', ['completed'])
-                        ->orderBy('staff_tasks.assigned_date', 'ASC');
-
-        if ($hotelId) {
-            $builder->where('staff_tasks.hotel_id', $hotelId);
-        }
-
-        if ($managerId) {
-            $builder->where('staff_tasks.manager_id', $managerId);
-        }
-
-        if ($staffId) {
-            $builder->where('staff_tasks.staff_id', $staffId);
-        }
-
-        return $builder->findAll();
-    }
-
-    /**
-     * Get upcoming tasks
-     */
-    public function getUpcomingTasks($hotelId = null, $managerId = null, $staffId = null, $days = 7)
-    {
-        $today = date('Y-m-d');
-        $futureDate = date('Y-m-d', strtotime("+{$days} days"));
-
-        $builder = $this->select('staff_tasks.*,
-                                staff.full_name as staff_name,
-                                staff.role as staff_role,
-                                managers.full_name as manager_name,
-                                hotels.name as hotel_name')
-                        ->join('staff', 'staff.staff_id = staff_tasks.staff_id', 'left')
-                        ->join('managers', 'managers.manager_id = staff_tasks.manager_id', 'left')
-                        ->join('hotels', 'hotels.hotel_id = staff_tasks.hotel_id', 'left')
-                        ->where('staff_tasks.due_date >=', $today)
-                        ->where('staff_tasks.due_date <=', $futureDate)
-                        ->whereNotIn('staff_tasks.status', ['completed'])
-                        ->orderBy('staff_tasks.due_date', 'ASC');
-
-        if ($hotelId) {
-            $builder->where('staff_tasks.hotel_id', $hotelId);
-        }
-
-        if ($managerId) {
-            $builder->where('staff_tasks.manager_id', $managerId);
-        }
-
-        if ($staffId) {
-            $builder->where('staff_tasks.staff_id', $staffId);
-        }
-
-        return $builder->findAll();
-    }
-
-    /**
-     * Get task statistics
-     */
-    public function getTaskStatistics($hotelId = null, $managerId = null, $staffId = null, $dateFrom = null, $dateTo = null)
+    public function getTaskStatistics($hotelId = null, $managerId = null)
     {
         $builder = $this->select('status, COUNT(*) as count')
-                        ->groupBy('status');
-
+                       ->join('staff', 'staff.staff_id = staff_tasks.staff_id')
+                       ->groupBy('staff_tasks.status');
+        
         if ($hotelId) {
-            $builder->where('hotel_id', $hotelId);
+            $builder->where('staff.hotel_id', $hotelId);
         }
-
+        
         if ($managerId) {
-            $builder->where('manager_id', $managerId);
+            $builder->where('staff_tasks.manager_id', $managerId);
         }
-
-        if ($staffId) {
-            $builder->where('staff_id', $staffId);
-        }
-
-        if ($dateFrom) {
-            $builder->where('assigned_date >=', $dateFrom);
-        }
-
-        if ($dateTo) {
-            $builder->where('assigned_date <=', $dateTo);
-        }
-
+        
         $results = $builder->findAll();
-
+        
         $stats = [
             'assigned' => 0,
             'in_progress' => 0,
@@ -357,13 +236,55 @@ class StaffTaskModel extends Model
             'overdue' => 0,
             'total' => 0
         ];
-
+        
         foreach ($results as $result) {
             $stats[$result['status']] = $result['count'];
             $stats['total'] += $result['count'];
         }
-
+        
         return $stats;
+    }
+
+    /**
+     * Get overdue tasks
+     */
+    public function getOverdueTasks($hotelId = null, $managerId = null)
+    {
+        $builder = $this->select('staff_tasks.*, staff.full_name as staff_name')
+                       ->join('staff', 'staff.staff_id = staff_tasks.staff_id')
+                       ->where('staff_tasks.due_date <', date('Y-m-d'))
+                       ->where('staff_tasks.status !=', 'completed');
+        
+        if ($hotelId) {
+            $builder->where('staff.hotel_id', $hotelId);
+        }
+        
+        if ($managerId) {
+            $builder->where('staff_tasks.manager_id', $managerId);
+        }
+        
+        return $builder->findAll();
+    }
+
+    /**
+     * Get tasks due today
+     */
+    public function getTasksDueToday($hotelId = null, $managerId = null)
+    {
+        $builder = $this->select('staff_tasks.*, staff.full_name as staff_name')
+                       ->join('staff', 'staff.staff_id = staff_tasks.staff_id')
+                       ->where('DATE(staff_tasks.due_date)', date('Y-m-d'))
+                       ->where('staff_tasks.status !=', 'completed');
+        
+        if ($hotelId) {
+            $builder->where('staff.hotel_id', $hotelId);
+        }
+        
+        if ($managerId) {
+            $builder->where('staff_tasks.manager_id', $managerId);
+        }
+        
+        return $builder->findAll();
     }
 
     /**
@@ -371,23 +292,25 @@ class StaffTaskModel extends Model
      */
     public function updateTaskStatus($taskId, $status)
     {
-        return $this->update($taskId, ['status' => $status]);
+        $data = ['status' => $status];
+        
+        if ($status === 'completed') {
+            $data['completed_date'] = date('Y-m-d H:i:s');
+        }
+        
+        return $this->update($taskId, $data);
     }
 
     /**
-     * Mark task as completed
+     * Reassign task
      */
-    public function completeTask($taskId)
+    public function reassignTask($taskId, $newStaffId, $managerId)
     {
-        return $this->update($taskId, ['status' => 'completed']);
-    }
-
-    /**
-     * Mark task as in progress
-     */
-    public function startTask($taskId)
-    {
-        return $this->update($taskId, ['status' => 'in_progress']);
+        return $this->update($taskId, [
+            'staff_id' => $newStaffId,
+            'status' => 'assigned',
+            'assigned_date' => date('Y-m-d H:i:s')
+        ]);
     }
 
     /**
@@ -461,28 +384,6 @@ class StaffTaskModel extends Model
     }
 
     /**
-     * Reassign task to different staff
-     */
-    public function reassignTask($taskId, $newStaffId, $newManagerId = null)
-    {
-        $updateData = ['staff_id' => $newStaffId];
-
-        if ($newManagerId) {
-            $updateData['manager_id'] = $newManagerId;
-        }
-
-        return $this->update($taskId, $updateData);
-    }
-
-    /**
-     * Extend task due date
-     */
-    public function extendDueDate($taskId, $newDueDate)
-    {
-        return $this->update($taskId, ['due_date' => $newDueDate]);
-    }
-
-    /**
      * Get most productive staff (by completed tasks)
      */
     public function getMostProductiveStaff($hotelId = null, $managerId = null, $dateFrom = null, $dateTo = null, $limit = 10)
@@ -543,4 +444,8 @@ class StaffTaskModel extends Model
 
         return $builder->findAll();
     }
+    
+
+
+
 }

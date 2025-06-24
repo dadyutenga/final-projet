@@ -77,4 +77,14 @@ $routes->group('manager', ['namespace' => 'App\Controllers'], function($routes) 
     $routes->post('staff-tasks/reassign/(:num)', 'StaffTaskController::reassign/$1');
 });
 
+$routes->group('staff', ['namespace' => 'App\Controllers'], function($routes) {
+    $routes->get('login', 'StaffAuthController::login');
+    $routes->post('login', 'StaffAuthController::processLogin');
+    $routes->get('logout', 'StaffAuthController::logout');
+    $routes->get('dashboard', 'StaffAuthController::dashboard');
+    $routes->get('profile', 'StaffAuthController::profile');
+    $routes->post('profile', 'StaffAuthController::updateProfile');
+    $routes->post('change-password', 'StaffAuthController::changePassword');
+    $routes->get('tasks', 'StaffTaskController::index'); // For staff task management
+});
 

@@ -584,7 +584,7 @@
                 <li><a href="#rooms">Rooms</a></li>
                 <li><a href="manager/login">Managers-Login</a></li>
                 <li><a href="admin/login">Admin-Login</a></li>
-                <li><a href="#testimonials">User-lofin</a></li>
+                <li><a href="staff/login">Staff-Login</a></li>
                 <li><a href="#contact">Contact</a></li>
             </ul>
             <button class="mobile-menu">
