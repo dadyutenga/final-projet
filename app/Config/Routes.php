@@ -88,3 +88,17 @@ $routes->group('staff', ['namespace' => 'App\Controllers'], function($routes) {
    
 });
 
+// Customer Booking Routes
+$routes->get('/customer-booking/get-hotels', 'CustomerBookingController::getHotels');
+$routes->post('/customer-booking/get-available-rooms', 'CustomerBookingController::getAvailableRooms');
+$routes->get('/customer-booking/get-room-details/(:num)', 'CustomerBookingController::getRoomDetails/$1');
+$routes->get('/customer-booking/get-hotel-info/(:num)', 'CustomerBookingController::getHotelInfo/$1');
+$routes->post('/customer-booking/calculate-price', 'CustomerBookingController::calculatePrice');
+$routes->post('/customer-booking/process-booking', 'CustomerBookingController::processBooking');
+$routes->post('/customer-booking/check-booking', 'CustomerBookingController::checkBooking');
+$routes->post('/customer-booking/get-booking-details', 'CustomerBookingController::getBookingDetails');
+$routes->post('/customer-booking/cancel-booking', 'CustomerBookingController::cancelBooking');
+$routes->post('/customer-booking/update-booking', 'CustomerBookingController::updateBooking');
+$routes->post('/customer-booking/get-booking-history', 'CustomerBookingController::getBookingHistory');
+$routes->get('/customer-booking/get-booking-stats', 'CustomerBookingController::getBookingStats');
+

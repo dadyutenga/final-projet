@@ -18,6 +18,12 @@ class BookingHistoryModel extends Model
         'hotel_id',
         'person_full_name',
         'person_phone',
+        'check_in_date',
+        'check_out_date',
+        'total_price',
+        'guests_count',
+        'guest_email',
+        'status',
         'action_date'
     ];
 
@@ -30,18 +36,25 @@ class BookingHistoryModel extends Model
 
     // Validation
     protected $validationRules      = [
-        'booking_ticket_no' => 'required|max_length[50]',
+        'booking_ticket_no' => 'required|max_length[50]|is_unique[booking_history.booking_ticket_no]',
         'room_id'          => 'required|is_natural_no_zero',
         'hotel_id'         => 'required|is_natural_no_zero',
         'person_full_name' => 'required|max_length[100]',
         'person_phone'     => 'required|max_length[20]',
+        'check_in_date'    => 'required|valid_date',
+        'check_out_date'   => 'required|valid_date',
+        'total_price'      => 'required|decimal|greater_than[0]',
+        'guests_count'     => 'required|is_natural_no_zero',
+        'guest_email'      => 'permit_empty|valid_email',
+        'status'           => 'permit_empty|in_list[confirmed,cancelled,completed]',
         'action_date'      => 'permit_empty|valid_date'
     ];
     
     protected $validationMessages   = [
         'booking_ticket_no' => [
             'required' => 'Booking ticket number is required',
-            'max_length' => 'Booking ticket number cannot exceed 50 characters'
+            'max_length' => 'Booking ticket number cannot exceed 50 characters',
+            'is_unique' => 'Booking ticket number already exists'
         ],
         'room_id' => [
             'required' => 'Room ID is required',
@@ -56,11 +69,31 @@ class BookingHistoryModel extends Model
             'max_length' => 'Person full name cannot exceed 100 characters'
         ],
         'person_phone' => [
-            'required' => 'Person phone number is required',
+            'required' => 'Phone number is required',
             'max_length' => 'Phone number cannot exceed 20 characters'
         ],
-        'action_date' => [
-            'valid_date' => 'Please enter a valid action date'
+        'check_in_date' => [
+            'required' => 'Check-in date is required',
+            'valid_date' => 'Please enter a valid check-in date'
+        ],
+        'check_out_date' => [
+            'required' => 'Check-out date is required',
+            'valid_date' => 'Please enter a valid check-out date'
+        ],
+        'total_price' => [
+            'required' => 'Total price is required',
+            'decimal' => 'Total price must be a valid decimal number',
+            'greater_than' => 'Total price must be greater than 0'
+        ],
+        'guests_count' => [
+            'required' => 'Guest count is required',
+            'is_natural_no_zero' => 'Guest count must be a valid number'
+        ],
+        'guest_email' => [
+            'valid_email' => 'Please enter a valid email address'
+        ],
+        'status' => [
+            'in_list' => 'Status must be one of: confirmed, cancelled, completed'
         ]
     ];
     
@@ -90,513 +123,171 @@ class BookingHistoryModel extends Model
     }
 
     /**
-     * Get booking history with full details
-     */
-    public function getHistoryWithDetails($historyId)
-    {
-        return $this->select('booking_history.*,
-                            rooms.room_number,
-                            rooms.room_type,
-                            rooms.price_per_night,
-                            hotels.name as hotel_name,
-                            hotels.city as hotel_city,
-                            hotels.country as hotel_country,
-                            hotels.address as hotel_address')
-                    ->join('rooms', 'rooms.room_id = booking_history.room_id', 'left')
-                    ->join('hotels', 'hotels.hotel_id = booking_history.hotel_id', 'left')
-                    ->where('booking_history.history_id', $historyId)
-                    ->first();
-    }
-
-    /**
-     * Get booking history by ticket number
-     */
-    public function getHistoryByTicket($ticketNo)
-    {
-        return $this->select('booking_history.*,
-                            rooms.room_number,
-                            rooms.room_type,
-                            hotels.name as hotel_name,
-                            hotels.city as hotel_city')
-                    ->join('rooms', 'rooms.room_id = booking_history.room_id', 'left')
-                    ->join('hotels', 'hotels.hotel_id = booking_history.hotel_id', 'left')
-                    ->where('booking_history.booking_ticket_no', $ticketNo)
-                    ->orderBy('booking_history.action_date', 'DESC')
-                    ->findAll();
-    }
-
-    /**
-     * Get booking history by person phone
-     */
-    public function getHistoryByPhone($phone, $limit = null, $offset = null)
-    {
-        $builder = $this->select('booking_history.*,
-                                rooms.room_number,
-                                rooms.room_type,
-                                rooms.price_per_night,
-                                hotels.name as hotel_name,
-                                hotels.city as hotel_city')
-                        ->join('rooms', 'rooms.room_id = booking_history.room_id', 'left')
-                        ->join('hotels', 'hotels.hotel_id = booking_history.hotel_id', 'left')
-                        ->where('booking_history.person_phone', $phone)
-                        ->orderBy('booking_history.action_date', 'DESC');
-
-        if ($limit) {
-            $builder->limit($limit, $offset);
-        }
-
-        return $builder->findAll();
-    }
-
-    /**
-     * Get booking history by person name
-     */
-    public function getHistoryByName($name, $limit = null, $offset = null)
-    {
-        $builder = $this->select('booking_history.*,
-                                rooms.room_number,
-                                rooms.room_type,
-                                rooms.price_per_night,
-                                hotels.name as hotel_name,
-                                hotels.city as hotel_city')
-                        ->join('rooms', 'rooms.room_id = booking_history.room_id', 'left')
-                        ->join('hotels', 'hotels.hotel_id = booking_history.hotel_id', 'left')
-                        ->like('booking_history.person_full_name', $name)
-                        ->orderBy('booking_history.action_date', 'DESC');
-
-        if ($limit) {
-            $builder->limit($limit, $offset);
-        }
-
-        return $builder->findAll();
-    }
-
-    /**
-     * Get booking history by hotel
-     */
-    public function getHistoryByHotel($hotelId, $dateFrom = null, $dateTo = null, $limit = null, $offset = null)
-    {
-        $builder = $this->select('booking_history.*,
-                                rooms.room_number,
-                                rooms.room_type,
-                                rooms.price_per_night')
-                        ->join('rooms', 'rooms.room_id = booking_history.room_id', 'left')
-                        ->where('booking_history.hotel_id', $hotelId)
-                        ->orderBy('booking_history.action_date', 'DESC');
-
-        if ($dateFrom) {
-            $builder->where('booking_history.action_date >=', $dateFrom);
-        }
-
-        if ($dateTo) {
-            $builder->where('booking_history.action_date <=', $dateTo);
-        }
-
-        if ($limit) {
-            $builder->limit($limit, $offset);
-        }
-
-        return $builder->findAll();
-    }
-
-    /**
-     * Get booking history by room
-     */
-    public function getHistoryByRoom($roomId, $dateFrom = null, $dateTo = null, $limit = null, $offset = null)
-    {
-        $builder = $this->select('booking_history.*,
-                                rooms.room_number,
-                                rooms.room_type,
-                                hotels.name as hotel_name')
-                        ->join('rooms', 'rooms.room_id = booking_history.room_id', 'left')
-                        ->join('hotels', 'hotels.hotel_id = booking_history.hotel_id', 'left')
-                        ->where('booking_history.room_id', $roomId)
-                        ->orderBy('booking_history.action_date', 'DESC');
-
-        if ($dateFrom) {
-            $builder->where('booking_history.action_date >=', $dateFrom);
-        }
-
-        if ($dateTo) {
-            $builder->where('booking_history.action_date <=', $dateTo);
-        }
-
-        if ($limit) {
-            $builder->limit($limit, $offset);
-        }
-
-        return $builder->findAll();
-    }
-
-    /**
-     * Log booking entry
-     */
-    public function logBooking($bookingTicketNo, $roomId, $hotelId, $personName, $personPhone)
-    {
-        return $this->insert([
-            'booking_ticket_no' => $bookingTicketNo,
-            'room_id' => $roomId,
-            'hotel_id' => $hotelId,
-            'person_full_name' => $personName,
-            'person_phone' => $personPhone,
-            'action_date' => date('Y-m-d H:i:s')
-        ]);
-    }
-
-    /**
-     * Get booking history statistics
-     */
-    public function getHistoryStatistics($hotelId = null, $roomId = null, $dateFrom = null, $dateTo = null)
-    {
-        $builder = $this->select('COUNT(*) as total_bookings')
-                        ->select('COUNT(DISTINCT person_phone) as unique_guests')
-                        ->select('COUNT(DISTINCT room_id) as rooms_used');
-
-        if ($hotelId) {
-            $builder->where('hotel_id', $hotelId);
-        }
-
-        if ($roomId) {
-            $builder->where('room_id', $roomId);
-        }
-
-        if ($dateFrom) {
-            $builder->where('action_date >=', $dateFrom);
-        }
-
-        if ($dateTo) {
-            $builder->where('action_date <=', $dateTo);
-        }
-
-        return $builder->first();
-    }
-
-    /**
-     * Get recent booking activities
-     */
-    public function getRecentActivities($hotelId = null, $roomId = null, $limit = 20)
-    {
-        $builder = $this->select('booking_history.*,
-                                rooms.room_number,
-                                rooms.room_type,
-                                hotels.name as hotel_name,
-                                hotels.city as hotel_city')
-                        ->join('rooms', 'rooms.room_id = booking_history.room_id', 'left')
-                        ->join('hotels', 'hotels.hotel_id = booking_history.hotel_id', 'left')
-                        ->orderBy('booking_history.action_date', 'DESC')
-                        ->limit($limit);
-
-        if ($hotelId) {
-            $builder->where('booking_history.hotel_id', $hotelId);
-        }
-
-        if ($roomId) {
-            $builder->where('booking_history.room_id', $roomId);
-        }
-
-        return $builder->findAll();
-    }
-
-    /**
-     * Get daily booking activities
-     */
-    public function getDailyActivities($hotelId = null, $roomId = null, $dateFrom = null, $dateTo = null)
-    {
-        $builder = $this->select('DATE(action_date) as date,
-                                COUNT(*) as booking_count')
-                        ->groupBy('DATE(action_date)')
-                        ->orderBy('date', 'DESC');
-
-        if ($hotelId) {
-            $builder->where('hotel_id', $hotelId);
-        }
-
-        if ($roomId) {
-            $builder->where('room_id', $roomId);
-        }
-
-        if ($dateFrom) {
-            $builder->where('action_date >=', $dateFrom);
-        }
-
-        if ($dateTo) {
-            $builder->where('action_date <=', $dateTo);
-        }
-
-        return $builder->findAll();
-    }
-
-    /**
-     * Get booking trends
-     */
-    public function getBookingTrends($hotelId = null, $months = 12)
-    {
-        $builder = $this->select('YEAR(action_date) as year,
-                                MONTH(action_date) as month,
-                                COUNT(*) as booking_count')
-                        ->where('action_date >=', date('Y-m-d', strtotime("-{$months} months")))
-                        ->groupBy('YEAR(action_date), MONTH(action_date)')
-                        ->orderBy('year', 'DESC')
-                        ->orderBy('month', 'DESC');
-
-        if ($hotelId) {
-            $builder->where('hotel_id', $hotelId);
-        }
-
-        return $builder->findAll();
-    }
-
-    /**
-     * Search booking history
-     */
-    public function searchHistory($searchTerm, $hotelId = null, $limit = 20, $offset = 0)
-    {
-        $builder = $this->select('booking_history.*,
-                                rooms.room_number,
-                                rooms.room_type,
-                                hotels.name as hotel_name')
-                        ->join('rooms', 'rooms.room_id = booking_history.room_id', 'left')
-                        ->join('hotels', 'hotels.hotel_id = booking_history.hotel_id', 'left');
-
-        if (!empty($searchTerm)) {
-            $builder->groupStart()
-                   ->like('booking_history.person_full_name', $searchTerm)
-                   ->orLike('booking_history.person_phone', $searchTerm)
-                   ->orLike('booking_history.booking_ticket_no', $searchTerm)
-                   ->orLike('hotels.name', $searchTerm)
-                   ->orLike('rooms.room_number', $searchTerm)
-                   ->groupEnd();
-        }
-
-        if ($hotelId) {
-            $builder->where('booking_history.hotel_id', $hotelId);
-        }
-
-        return $builder->orderBy('booking_history.action_date', 'DESC')
-                      ->limit($limit, $offset)
-                      ->findAll();
-    }
-
-    /**
-     * Get person booking frequency by phone
-     */
-    public function getPersonBookingFrequency($phone, $months = 12)
-    {
-        return $this->select('YEAR(action_date) as year,
-                            MONTH(action_date) as month,
-                            COUNT(*) as booking_count')
-                    ->where('person_phone', $phone)
-                    ->where('action_date >=', date('Y-m-d', strtotime("-{$months} months")))
-                    ->groupBy('YEAR(action_date), MONTH(action_date)')
-                    ->orderBy('year', 'DESC')
-                    ->orderBy('month', 'DESC')
-                    ->findAll();
-    }
-
-    /**
-     * Get hotel performance metrics
-     */
-    public function getHotelPerformance($hotelId, $dateFrom = null, $dateTo = null)
-    {
-        $builder = $this->select('COUNT(*) as total_bookings,
-                                COUNT(DISTINCT person_phone) as unique_guests,
-                                COUNT(DISTINCT room_id) as rooms_booked,
-                                DATE(action_date) as date')
-                        ->where('hotel_id', $hotelId)
-                        ->groupBy('DATE(action_date)')
-                        ->orderBy('date', 'DESC');
-
-        if ($dateFrom) {
-            $builder->where('action_date >=', $dateFrom);
-        }
-
-        if ($dateTo) {
-            $builder->where('action_date <=', $dateTo);
-        }
-
-        return $builder->findAll();
-    }
-
-    /**
-     * Get room occupancy history
-     */
-    public function getRoomOccupancyHistory($roomId, $dateFrom = null, $dateTo = null)
-    {
-        $builder = $this->select('booking_history.*,
-                                hotels.name as hotel_name')
-                        ->join('hotels', 'hotels.hotel_id = booking_history.hotel_id', 'left')
-                        ->where('booking_history.room_id', $roomId)
-                        ->orderBy('booking_history.action_date', 'ASC');
-
-        if ($dateFrom) {
-            $builder->where('action_date >=', $dateFrom);
-        }
-
-        if ($dateTo) {
-            $builder->where('action_date <=', $dateTo);
-        }
-
-        return $builder->findAll();
-    }
-
-    /**
-     * Get guest history by phone number
-     */
-    public function getGuestHistory($phone)
-    {
-        return $this->select('booking_history.*,
-                            rooms.room_number,
-                            rooms.room_type,
-                            hotels.name as hotel_name,
-                            hotels.city as hotel_city')
-                    ->join('rooms', 'rooms.room_id = booking_history.room_id', 'left')
-                    ->join('hotels', 'hotels.hotel_id = booking_history.hotel_id', 'left')
-                    ->where('booking_history.person_phone', $phone)
-                    ->orderBy('booking_history.action_date', 'DESC')
-                    ->findAll();
-    }
-
-    /**
      * Generate unique booking ticket number
      */
     public function generateTicketNumber($hotelId)
     {
-        do {
-            $ticketNo = 'BK' . $hotelId . date('Ymd') . rand(1000, 9999);
-        } while ($this->where('booking_ticket_no', $ticketNo)->first());
+        $date = date('Ymd');
+        $prefix = 'BK' . str_pad($hotelId, 2, '0', STR_PAD_LEFT) . $date;
         
-        return $ticketNo;
-    }
-
-    /**
-     * Check if ticket number exists
-     */
-    public function ticketExists($ticketNo)
-    {
-        return $this->where('booking_ticket_no', $ticketNo)->first() !== null;
-    }
-
-    /**
-     * Clean old history records
-     */
-    public function cleanOldHistory($daysToKeep = 365)
-    {
-        $cutoffDate = date('Y-m-d', strtotime("-{$daysToKeep} days"));
-        return $this->where('action_date <', $cutoffDate)->delete();
-    }
-
-    /**
-     * Get frequent guests
-     */
-    public function getFrequentGuests($hotelId = null, $minBookings = 3, $limit = 50)
-    {
-        $builder = $this->select('person_full_name,
-                                person_phone,
-                                COUNT(*) as total_bookings,
-                                MAX(action_date) as last_booking_date,
-                                MIN(action_date) as first_booking_date')
-                        ->groupBy('person_phone')
-                        ->having('total_bookings >=', $minBookings)
-                        ->orderBy('total_bookings', 'DESC')
-                        ->limit($limit);
-
-        if ($hotelId) {
-            $builder->where('hotel_id', $hotelId);
+        // Get the last ticket number for today
+        $lastTicket = $this->like('booking_ticket_no', $prefix, 'after')
+                          ->orderBy('booking_ticket_no', 'DESC')
+                          ->first();
+        
+        if ($lastTicket) {
+            $lastNumber = (int)substr($lastTicket['booking_ticket_no'], -4);
+            $newNumber = $lastNumber + 1;
+        } else {
+            $newNumber = 1;
         }
-
-        return $builder->findAll();
+        
+        return $prefix . str_pad($newNumber, 4, '0', STR_PAD_LEFT);
     }
 
     /**
-     * Get booking count by date range
+     * Get booking by ticket number
      */
-    public function getBookingCountByDateRange($hotelId = null, $dateFrom = null, $dateTo = null)
+    public function getBookingByTicket($ticketNo)
     {
-        $builder = $this->select('COUNT(*) as total_bookings');
+        return $this->where('booking_ticket_no', $ticketNo)->first();
+    }
+
+    /**
+     * Get booking with full details
+     */
+    public function getBookingWithDetails($ticketNo)
+    {
+        return $this->select('booking_history.*,
+                            hotels.name as hotel_name,
+                            hotels.address as hotel_address,
+                            hotels.city as hotel_city,
+                            hotels.country as hotel_country,
+                            hotels.phone as hotel_phone,
+                            rooms.room_number,
+                            rooms.floor,
+                            room_types.type_name,
+                            room_types.description as room_description,
+                            room_types.capacity,
+                            room_types.base_price')
+                    ->join('hotels', 'hotels.hotel_id = booking_history.hotel_id', 'left')
+                    ->join('rooms', 'rooms.room_id = booking_history.room_id', 'left')
+                    ->join('room_types', 'room_types.room_type_id = rooms.room_type_id', 'left')
+                    ->where('booking_history.booking_ticket_no', $ticketNo)
+                    ->first();
+    }
+
+    /**
+     * Get booking history by phone number
+     */
+    public function getHistoryByPhone($phone, $limit = 10)
+    {
+        return $this->select('booking_history.*,
+                            hotels.name as hotel_name,
+                            hotels.city as hotel_city,
+                            rooms.room_number,
+                            room_types.type_name')
+                    ->join('hotels', 'hotels.hotel_id = booking_history.hotel_id', 'left')
+                    ->join('rooms', 'rooms.room_id = booking_history.room_id', 'left')
+                    ->join('room_types', 'room_types.room_type_id = rooms.room_type_id', 'left')
+                    ->where('booking_history.person_phone', $phone)
+                    ->orderBy('booking_history.created_at', 'DESC')
+                    ->limit($limit)
+                    ->findAll();
+    }
+
+    /**
+     * Get booking statistics
+     */
+    public function getBookingStatistics($hotelId = null, $dateFrom = null, $dateTo = null)
+    {
+        $builder = $this->select('status, COUNT(*) as count, SUM(total_price) as revenue')
+                        ->groupBy('status');
 
         if ($hotelId) {
             $builder->where('hotel_id', $hotelId);
         }
 
         if ($dateFrom) {
-            $builder->where('action_date >=', $dateFrom);
+            $builder->where('check_in_date >=', $dateFrom);
         }
 
         if ($dateTo) {
-            $builder->where('action_date <=', $dateTo);
+            $builder->where('check_out_date <=', $dateTo);
         }
 
-        $result = $builder->first();
-        return $result ? $result['total_bookings'] : 0;
+        $results = $builder->findAll();
+
+        $stats = [
+            'confirmed' => ['count' => 0, 'revenue' => 0],
+            'cancelled' => ['count' => 0, 'revenue' => 0],
+            'completed' => ['count' => 0, 'revenue' => 0],
+            'total' => ['count' => 0, 'revenue' => 0]
+        ];
+
+        foreach ($results as $result) {
+            $stats[$result['status']] = [
+                'count' => $result['count'],
+                'revenue' => $result['revenue'] ?? 0
+            ];
+            $stats['total']['count'] += $result['count'];
+            if ($result['status'] !== 'cancelled') {
+                $stats['total']['revenue'] += $result['revenue'] ?? 0;
+            }
+        }
+
+        return $stats;
     }
 
     /**
-     * Get monthly booking summary
+     * Check room availability for dates (used by controller)
      */
-    public function getMonthlyBookingSummary($hotelId = null, $year = null)
+    public function checkRoomAvailability($roomId, $checkIn, $checkOut, $excludeBookingId = null)
     {
-        $year = $year ?: date('Y');
-        
-        $builder = $this->select('MONTH(action_date) as month,
-                                COUNT(*) as booking_count,
-                                COUNT(DISTINCT person_phone) as unique_guests')
-                        ->where('YEAR(action_date)', $year)
-                        ->groupBy('MONTH(action_date)')
-                        ->orderBy('month', 'ASC');
+        $builder = $this->where('room_id', $roomId)
+                        ->where('status !=', 'cancelled')
+                        ->groupStart()
+                            ->where('check_in_date <=', $checkOut)
+                            ->where('check_out_date >=', $checkIn)
+                        ->groupEnd();
 
-        if ($hotelId) {
-            $builder->where('hotel_id', $hotelId);
+        if ($excludeBookingId) {
+            $builder->where('history_id !=', $excludeBookingId);
         }
 
-        return $builder->findAll();
+        return $builder->countAllResults() == 0;
     }
 
     /**
-     * Get guest loyalty data
+     * Calculate total nights between two dates
      */
-    public function getGuestLoyaltyData($hotelId = null)
+    public function calculateTotalNights($checkIn, $checkOut)
     {
-        $builder = $this->select('person_full_name,
-                                person_phone,
-                                COUNT(*) as visit_count,
-                                MIN(action_date) as first_visit,
-                                MAX(action_date) as last_visit,
-                                DATEDIFF(MAX(action_date), MIN(action_date)) as days_as_customer')
-                        ->groupBy('person_phone')
-                        ->having('visit_count >', 1)
-                        ->orderBy('visit_count', 'DESC');
-
-        if ($hotelId) {
-            $builder->where('hotel_id', $hotelId);
-        }
-
-        return $builder->findAll();
+        $checkInDate = new \DateTime($checkIn);
+        $checkOutDate = new \DateTime($checkOut);
+        $interval = $checkInDate->diff($checkOutDate);
+        return $interval->days;
     }
 
     /**
-     * Get room popularity statistics
+     * Get booking by ID with details
      */
-    public function getRoomPopularityStats($hotelId = null, $dateFrom = null, $dateTo = null)
+    public function getBookingWithDetailsById($bookingId)
     {
-        $builder = $this->select('rooms.room_number,
-                                rooms.room_type,
-                                COUNT(*) as booking_count')
-                        ->join('rooms', 'rooms.room_id = booking_history.room_id')
-                        ->groupBy('booking_history.room_id')
-                        ->orderBy('booking_count', 'DESC');
-
-        if ($hotelId) {
-            $builder->where('booking_history.hotel_id', $hotelId);
-        }
-
-        if ($dateFrom) {
-            $builder->where('booking_history.action_date >=', $dateFrom);
-        }
-
-        if ($dateTo) {
-            $builder->where('booking_history.action_date <=', $dateTo);
-        }
-
-        return $builder->findAll();
+        return $this->select('booking_history.*,
+                            hotels.name as hotel_name,
+                            hotels.address as hotel_address,
+                            hotels.city as hotel_city,
+                            hotels.country as hotel_country,
+                            rooms.room_number,
+                            rooms.floor,
+                            room_types.type_name,
+                            room_types.description as room_description,
+                            room_types.capacity')
+                    ->join('hotels', 'hotels.hotel_id = booking_history.hotel_id', 'left')
+                    ->join('rooms', 'rooms.room_id = booking_history.room_id', 'left')
+                    ->join('room_types', 'room_types.room_type_id = rooms.room_type_id', 'left')
+                    ->where('booking_history.history_id', $bookingId)
+                    ->first();
     }
 }
