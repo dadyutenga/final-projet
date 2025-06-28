@@ -8,4 +8,9 @@ class Home extends BaseController
     {
         return view('welcome');
     }
+
+    public function book()
+{
+    return view('book'); // This will load book.php
+}
 }

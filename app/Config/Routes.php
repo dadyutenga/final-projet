@@ -12,6 +12,8 @@ use App\Controllers\RoomTypeController;
  * @var RouteCollection $routes
  */
 $routes->get('/', 'Home::index');
+$routes->get('book', 'Home::book');
+
 
 // Admin routes group
 $routes->group('admin', ['namespace' => 'App\Controllers'], function($routes) {

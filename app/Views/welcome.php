@@ -1,9 +1,10 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Hotel Management  System  Hotel - Premium Accommodation</title>
+    <title>Hotel Management System Hotel - Premium Accommodation</title>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
@@ -115,46 +116,58 @@
 
         .hero p {
             font-size: 1.3rem;
-            margin-bottom: 2rem;
+            margin-bottom: 3rem;
             font-weight: 300;
         }
 
-        .booking-form {
-            background: var(--white);
-            padding: 2rem;
-            border-radius: 15px;
-            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 1rem;
-            margin-top: 2rem;
-            color: var(--dark-gray);
+        /* Book Now Button */
+        .book-now-btn {
+            display: inline-block;
+            background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-dark) 100%);
+            color: var(--white);
+            padding: 20px 40px;
+            border-radius: 50px;
+            font-size: 1.3rem;
+            font-weight: 700;
+            text-decoration: none;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            box-shadow: 0 15px 35px rgba(50, 205, 50, 0.4);
+            transition: all 0.4s ease;
+            border: 3px solid transparent;
+            position: relative;
+            overflow: hidden;
         }
 
-        .form-group {
-            display: flex;
-            flex-direction: column;
+        .book-now-btn:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 25px 50px rgba(50, 205, 50, 0.6);
+            border-color: var(--white);
         }
 
-        .form-group label {
-            font-weight: 500;
-            margin-bottom: 0.5rem;
-            color: var(--dark-gray);
+        .book-now-btn:active {
+            transform: translateY(-2px);
         }
 
-        .form-group input,
-        .form-group select {
-            padding: 0.8rem;
-            border: 2px solid var(--border-color);
-            border-radius: 8px;
-            font-size: 1rem;
-            transition: border-color 0.3s ease;
+        .book-now-btn i {
+            margin-right: 10px;
+            font-size: 1.2rem;
         }
 
-        .form-group input:focus,
-        .form-group select:focus {
-            outline: none;
-            border-color: var(--primary-color);
+        /* Pulse animation for the button */
+        .book-now-btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+            transition: left 0.5s;
+        }
+
+        .book-now-btn:hover::before {
+            left: 100%;
         }
 
         .btn-primary {
@@ -531,9 +544,9 @@
                 font-size: 1.1rem;
             }
 
-            .booking-form {
-                grid-template-columns: 1fr;
-                padding: 1.5rem;
+            .book-now-btn {
+                padding: 15px 30px;
+                font-size: 1.1rem;
             }
 
             .section-title h2 {
@@ -563,9 +576,10 @@
                 font-size: 2rem;
             }
 
-            .booking-form {
-                margin: 1rem;
-                padding: 1rem;
+            .book-now-btn {
+                padding: 12px 25px;
+                font-size: 1rem;
+                letter-spacing: 1px;
             }
 
             section {
@@ -578,7 +592,7 @@
     <!-- Header -->
     <header>
         <nav class="container">
-            <div class="logo">Hotel Management  System </div>
+            <div class="logo">Hotel Management System</div>
             <ul class="nav-links">
                 <li><a href="#home">Home</a></li>
                 <li><a href="#rooms">Rooms</a></li>
@@ -596,33 +610,13 @@
     <!-- Hero Section -->
     <section id="home" class="hero">
         <div class="hero-content">
-            <h1>Welcome to Hotel Management  System </h1>
+            <h1>Welcome to Hotel Management System</h1>
             <p>Experience luxury and comfort in the heart of the city</p>
             
-            <form class="booking-form">
-                <div class="form-group">
-                    <label for="checkin">Check-in</label>
-                    <input type="date" id="checkin" name="checkin" required>
-                </div>
-                <div class="form-group">
-                    <label for="checkout">Check-out</label>
-                    <input type="date" id="checkout" name="checkout" required>
-                </div>
-                <div class="form-group">
-                    <label for="guests">Guests</label>
-                    <select id="guests" name="guests" required>
-                        <option value="">Select guests</option>
-                        <option value="1">1 Guest</option>
-                        <option value="2">2 Guests</option>
-                        <option value="3">3 Guests</option>
-                        <option value="4">4 Guests</option>
-                        <option value="5+">5+ Guests</option>
-                    </select>
-                </div>
-                <div class="form-group">
-                    <button type="submit" class="btn-primary">Book Now</button>
-                </div>
-            </form>
+            <a href="<?= base_url('book') ?>" class="book-now-btn">
+                <i class="fas fa-calendar-check"></i>
+                Click Here to Book Room
+            </a>
         </div>
     </section>
 
@@ -648,7 +642,7 @@
                             <span class="feature-tag">32" TV</span>
                             <span class="feature-tag">Mini Bar</span>
                         </div>
-                        <button class="btn-primary">Book Room</button>
+                        <a href="<?= base_url('book') ?>" class="btn-primary">Book Room</a>
                     </div>
                 </div>
 
@@ -665,7 +659,7 @@
                             <span class="feature-tag">Balcony</span>
                             <span class="feature-tag">Premium Bath</span>
                         </div>
-                        <button class="btn-primary">Book Room</button>
+                        <a href="<?= base_url('book') ?>" class="btn-primary">Book Room</a>
                     </div>
                 </div>
 
@@ -682,7 +676,7 @@
                             <span class="feature-tag">Free WiFi</span>
                             <span class="feature-tag">Coffee Maker</span>
                         </div>
-                        <button class="btn-primary">Book Room</button>
+                        <a href="<?= base_url('book') ?>" class="btn-primary">Book Room</a>
                     </div>
                 </div>
 
@@ -699,7 +693,7 @@
                             <span class="feature-tag">Butler Service</span>
                             <span class="feature-tag">Premium Location</span>
                         </div>
-                        <button class="btn-primary">Book Room</button>
+                        <a href="<?= base_url('book') ?>" class="btn-primary">Book Room</a>
                     </div>
                 </div>
             </div>
@@ -771,7 +765,7 @@
         <div class="container">
             <div class="section-title">
                 <h2>What Our Guests Say</h2>
-                <p>Read reviews from our satisfied guests who experienced the Hotel Management  System  difference</p>
+                <p>Read reviews from our satisfied guests who experienced the Hotel Management System difference</p>
             </div>
             
             <div class="testimonials-container">
@@ -789,7 +783,7 @@
                         </div>
 
                         <div class="testimonial">
-                            <p class="testimonial-text">"Perfect location, beautiful rooms, and outstanding service. The breakfast was delicious and the pool area was so relaxing. Highly recommend Hotel Management  System !"</p>
+                            <p class="testimonial-text">"Perfect location, beautiful rooms, and outstanding service. The breakfast was delicious and the pool area was so relaxing. Highly recommend Hotel Management System!"</p>
                             <div class="testimonial-author">
                                 <div class="author-avatar" style="background-image: url('https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?ixlib=rb-4.0.3&auto=format&fit=crop&w=1170&q=80');"></div>
                                 <div class="author-info">
@@ -835,7 +829,7 @@
         <div class="container">
             <div class="footer-content">
                 <div class="footer-section">
-                    <h3>Hotel Management  System  Hotel</h3>
+                    <h3>Hotel Management System Hotel</h3>
                     <p>Experience luxury and comfort in the heart of the city. Your perfect stay awaits.</p>
                     <div class="social-icons">
                         <a href="#"><i class="fab fa-facebook-f"></i></a>
@@ -872,14 +866,14 @@
                     <ul>
                         <li><i class="fas fa-map-marker-alt"></i> 123 Luxury Avenue, City Center</li>
                         <li><i class="fas fa-phone"></i> +1 (555) 123-4567</li>
-                        <li><i class="fas fa-envelope"></i> info@Hotel Management  System .com</li>
+                        <li><i class="fas fa-envelope"></i> info@hotelmanagementsystem.com</li>
                         <li><i class="fas fa-clock"></i> 24/7 Front Desk Service</li>
                     </ul>
                 </div>
             </div>
             
             <div class="footer-bottom">
-                <p>&copy; 2024 Hotel Management  System  Hotel. All rights reserved. | Privacy Policy | Terms of Service</p>
+                <p>&copy; 2024 Hotel Management System Hotel. All rights reserved. | Privacy Policy | Terms of Service</p>
             </div>
         </div>
     </footer>
@@ -985,54 +979,6 @@
         // Initialize slider when DOM is loaded
         document.addEventListener('DOMContentLoaded', () => {
             new TestimonialSlider();
-        });
-
-        // Booking form handling
-        document.querySelector('.booking-form').addEventListener('submit', function(e) {
-            e.preventDefault();
-            
-            const checkin = document.getElementById('checkin').value;
-            const checkout = document.getElementById('checkout').value;
-            const guests = document.getElementById('guests').value;
-            
-            if (!checkin || !checkout || !guests) {
-                alert('Please fill in all booking details.');
-                return;
-            }
-            
-            // Check if checkout is after checkin
-            if (new Date(checkout) <= new Date(checkin)) {
-                alert('Check-out date must be after check-in date.');
-                return;
-            }
-            
-            alert(`Booking request submitted!\nCheck-in: ${checkin}\nCheck-out: ${checkout}\nGuests: ${guests}\n\nThank you for choosing Hotel Management  System !`);
-        });
-
-        // Room booking buttons
-        document.querySelectorAll('.room-card .btn-primary').forEach(button => {
-            button.addEventListener('click', function() {
-                const roomName = this.closest('.room-card').querySelector('h3').textContent;
-                alert(`You selected: ${roomName}\n\nPlease use the booking form in the hero section to complete your reservation.`);
-                
-                // Scroll to booking form
-                document.querySelector('.hero').scrollIntoView({
-                    behavior: 'smooth'
-                });
-            });
-        });
-
-        // Set minimum date for booking form (today)
-        const today = new Date().toISOString().split('T')[0];
-        document.getElementById('checkin').setAttribute('min', today);
-        document.getElementById('checkout').setAttribute('min', today);
-
-        // Update checkout minimum date when checkin changes
-        document.getElementById('checkin').addEventListener('change', function() {
-            const checkinDate = new Date(this.value);
-            checkinDate.setDate(checkinDate.getDate() + 1);
-            const minCheckout = checkinDate.toISOString().split('T')[0];
-            document.getElementById('checkout').setAttribute('min', minCheckout);
         });
 
         // Mobile menu toggle (basic implementation)
