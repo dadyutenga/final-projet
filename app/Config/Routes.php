@@ -90,6 +90,9 @@ $routes->group('staff', ['namespace' => 'App\Controllers'], function($routes) {
     $routes->post('profile', 'StaffAuthController::updateProfile');
     $routes->post('change-password', 'StaffAuthController::changePassword');
    
+    $routes->get('tasks', 'TaskViewerController::index');
+    $routes->get('tasks/show/(:num)', 'TaskViewerController::show/$1');
+    $routes->post('tasks/update-status/(:num)', 'TaskViewerController::updateStatus/$1');
 });
 
 // Customer Booking Routes
