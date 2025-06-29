@@ -14,7 +14,7 @@ class ReservationModel extends Model
     protected $protectFields    = true;
     protected $allowedFields    = [
         'history_id',
-        'user_id',
+        'staff_id',
         'check_in_date',
         'check_out_date',
         'total_price',
@@ -31,7 +31,7 @@ class ReservationModel extends Model
     // Validation
     protected $validationRules      = [
         'history_id'     => 'permit_empty|is_natural_no_zero',
-        'user_id'        => 'permit_empty|is_natural_no_zero',
+        'staff_id'       => 'permit_empty|is_natural_no_zero',
         'check_in_date'  => 'required|valid_date',
         'check_out_date' => 'required|valid_date',
         'total_price'    => 'required|decimal|greater_than[0]',
@@ -41,6 +41,9 @@ class ReservationModel extends Model
     protected $validationMessages   = [
         'history_id' => [
             'is_natural_no_zero' => 'History ID must be a valid number'
+        ],
+        'staff_id' => [
+            'is_natural_no_zero' => 'Staff ID must be a valid number'
         ],
         'check_in_date' => [
             'required'    => 'Check-in date is required',
@@ -87,13 +90,13 @@ class ReservationModel extends Model
         $hotelId = session()->get('booking_hotel_id') ?? null;
         $roomId = session()->get('booking_room_id') ?? null;
         
-        // If user_id is provided, get user details
-        if (isset($data['data']['user_id']) && $data['data']['user_id']) {
-            $userModel = new \App\Models\UserModel();
-            $user = $userModel->find($data['data']['user_id']);
-            if ($user) {
-                $guestName = $user['full_name'];
-                $guestPhone = $user['phone'] ?? '';
+        // If staff_id is provided, get staff details
+        if (isset($data['data']['staff_id']) && $data['data']['staff_id']) {
+            $staffModel = new \App\Models\StaffModel();
+            $staff = $staffModel->find($data['data']['staff_id']);
+            if ($staff) {
+                $guestName = $staff['full_name'];
+                $guestPhone = $staff['phone'] ?? '';
             }
         }
 
@@ -147,9 +150,10 @@ class ReservationModel extends Model
     public function getReservationWithDetails($reservationId)
     {
         return $this->select('reservations.*,
-                            users.full_name as guest_name,
-                            users.email as guest_email,
-                            users.phone as guest_phone,
+                            staff.full_name as staff_name,
+                            staff.email as staff_email,
+                            staff.phone as staff_phone,
+                            staff.role as staff_role,
                             hotels.name as hotel_name,
                             hotels.address as hotel_address,
                             hotels.city as hotel_city,
@@ -166,7 +170,7 @@ class ReservationModel extends Model
                             booking_history.action_date as booking_date,
                             booking_history.hotel_id,
                             booking_history.room_id')
-                    ->join('users', 'users.user_id = reservations.user_id', 'left')
+                    ->join('staff', 'staff.staff_id = reservations.staff_id', 'left')
                     ->join('booking_history', 'booking_history.history_id = reservations.history_id', 'left')
                     ->join('hotels', 'hotels.hotel_id = booking_history.hotel_id', 'left')
                     ->join('rooms', 'rooms.room_id = booking_history.room_id', 'left')
@@ -181,9 +185,10 @@ class ReservationModel extends Model
     public function getReservationByTicket($ticketNo)
     {
         return $this->select('reservations.*,
-                            users.full_name as guest_name,
-                            users.email as guest_email,
-                            users.phone as guest_phone,
+                            staff.full_name as staff_name,
+                            staff.email as staff_email,
+                            staff.phone as staff_phone,
+                            staff.role as staff_role,
                             hotels.name as hotel_name,
                             hotels.address as hotel_address,
                             hotels.city as hotel_city,
@@ -194,7 +199,7 @@ class ReservationModel extends Model
                             booking_history.person_phone as booked_by_phone,
                             booking_history.hotel_id,
                             booking_history.room_id')
-                    ->join('users', 'users.user_id = reservations.user_id', 'left')
+                    ->join('staff', 'staff.staff_id = reservations.staff_id', 'left')
                     ->join('booking_history', 'booking_history.history_id = reservations.history_id', 'left')
                     ->join('hotels', 'hotels.hotel_id = booking_history.hotel_id', 'left')
                     ->join('rooms', 'rooms.room_id = booking_history.room_id', 'left')
@@ -204,9 +209,9 @@ class ReservationModel extends Model
     }
 
     /**
-     * Get reservations by user
+     * Get reservations by staff
      */
-    public function getReservationsByUser($userId, $status = null, $limit = null, $offset = null)
+    public function getReservationsByStaff($staffId, $status = null, $limit = null, $offset = null)
     {
         $builder = $this->select('reservations.*,
                                 hotels.name as hotel_name,
@@ -221,7 +226,7 @@ class ReservationModel extends Model
                         ->join('hotels', 'hotels.hotel_id = booking_history.hotel_id', 'left')
                         ->join('rooms', 'rooms.room_id = booking_history.room_id', 'left')
                         ->join('room_types', 'room_types.room_type_id = rooms.room_type_id', 'left')
-                        ->where('reservations.user_id', $userId)
+                        ->where('reservations.staff_id', $staffId)
                         ->orderBy('reservations.check_in_date', 'DESC');
 
         if ($status) {
@@ -241,15 +246,16 @@ class ReservationModel extends Model
     public function getReservationsByHotel($hotelId, $status = null, $dateFrom = null, $dateTo = null, $limit = null, $offset = null)
     {
         $builder = $this->select('reservations.*,
-                                users.full_name as guest_name,
-                                users.email as guest_email,
-                                users.phone as guest_phone,
+                                staff.full_name as staff_name,
+                                staff.email as staff_email,
+                                staff.phone as staff_phone,
+                                staff.role as staff_role,
                                 rooms.room_number,
                                 room_types.type_name,
                                 booking_history.booking_ticket_no,
                                 booking_history.person_full_name as booked_by_name,
                                 booking_history.person_phone as booked_by_phone')
-                        ->join('users', 'users.user_id = reservations.user_id', 'left')
+                        ->join('staff', 'staff.staff_id = reservations.staff_id', 'left')
                         ->join('booking_history', 'booking_history.history_id = reservations.history_id', 'left')
                         ->join('rooms', 'rooms.room_id = booking_history.room_id', 'left')
                         ->join('room_types', 'room_types.room_type_id = rooms.room_type_id', 'left')
@@ -283,15 +289,16 @@ class ReservationModel extends Model
         $today = date('Y-m-d');
 
         $builder = $this->select('reservations.*,
-                                users.full_name as guest_name,
-                                users.phone as guest_phone,
+                                staff.full_name as staff_name,
+                                staff.phone as staff_phone,
+                                staff.role as staff_role,
                                 hotels.name as hotel_name,
                                 rooms.room_number,
                                 room_types.type_name,
                                 booking_history.booking_ticket_no,
                                 booking_history.person_full_name as booked_by_name,
                                 booking_history.person_phone as booked_by_phone')
-                        ->join('users', 'users.user_id = reservations.user_id', 'left')
+                        ->join('staff', 'staff.staff_id = reservations.staff_id', 'left')
                         ->join('booking_history', 'booking_history.history_id = reservations.history_id', 'left')
                         ->join('hotels', 'hotels.hotel_id = booking_history.hotel_id', 'left')
                         ->join('rooms', 'rooms.room_id = booking_history.room_id', 'left')
@@ -315,15 +322,16 @@ class ReservationModel extends Model
         $today = date('Y-m-d');
 
         $builder = $this->select('reservations.*,
-                                users.full_name as guest_name,
-                                users.phone as guest_phone,
+                                staff.full_name as staff_name,
+                                staff.phone as staff_phone,
+                                staff.role as staff_role,
                                 hotels.name as hotel_name,
                                 rooms.room_number,
                                 room_types.type_name,
                                 booking_history.booking_ticket_no,
                                 booking_history.person_full_name as booked_by_name,
                                 booking_history.person_phone as booked_by_phone')
-                        ->join('users', 'users.user_id = reservations.user_id', 'left')
+                        ->join('staff', 'staff.staff_id = reservations.staff_id', 'left')
                         ->join('booking_history', 'booking_history.history_id = reservations.history_id', 'left')
                         ->join('hotels', 'hotels.hotel_id = booking_history.hotel_id', 'left')
                         ->join('rooms', 'rooms.room_id = booking_history.room_id', 'left')
@@ -347,16 +355,17 @@ class ReservationModel extends Model
         $today = date('Y-m-d');
 
         $builder = $this->select('reservations.*,
-                                users.full_name as guest_name,
-                                users.phone as guest_phone,
-                                users.email as guest_email,
+                                staff.full_name as staff_name,
+                                staff.phone as staff_phone,
+                                staff.email as staff_email,
+                                staff.role as staff_role,
                                 hotels.name as hotel_name,
                                 rooms.room_number,
                                 room_types.type_name,
                                 booking_history.booking_ticket_no,
                                 booking_history.person_full_name as booked_by_name,
                                 booking_history.person_phone as booked_by_phone')
-                        ->join('users', 'users.user_id = reservations.user_id', 'left')
+                        ->join('staff', 'staff.staff_id = reservations.staff_id', 'left')
                         ->join('booking_history', 'booking_history.history_id = reservations.history_id', 'left')
                         ->join('hotels', 'hotels.hotel_id = booking_history.hotel_id', 'left')
                         ->join('rooms', 'rooms.room_id = booking_history.room_id', 'left')
@@ -445,15 +454,16 @@ class ReservationModel extends Model
         $futureDate = date('Y-m-d', strtotime("+{$days} days"));
 
         $builder = $this->select('reservations.*,
-                                users.full_name as guest_name,
-                                users.phone as guest_phone,
+                                staff.full_name as staff_name,
+                                staff.phone as staff_phone,
+                                staff.role as staff_role,
                                 hotels.name as hotel_name,
                                 rooms.room_number,
                                 room_types.type_name,
                                 booking_history.booking_ticket_no,
                                 booking_history.person_full_name as booked_by_name,
                                 booking_history.person_phone as booked_by_phone')
-                        ->join('users', 'users.user_id = reservations.user_id', 'left')
+                        ->join('staff', 'staff.staff_id = reservations.staff_id', 'left')
                         ->join('booking_history', 'booking_history.history_id = reservations.history_id', 'left')
                         ->join('hotels', 'hotels.hotel_id = booking_history.hotel_id', 'left')
                         ->join('rooms', 'rooms.room_id = booking_history.room_id', 'left')
@@ -531,22 +541,24 @@ class ReservationModel extends Model
     public function searchReservations($searchTerm, $hotelId = null, $status = null, $limit = 20, $offset = 0)
     {
         $builder = $this->select('reservations.*,
-                                users.full_name as guest_name,
-                                users.email as guest_email,
+                                staff.full_name as staff_name,
+                                staff.email as staff_email,
+                                staff.role as staff_role,
                                 hotels.name as hotel_name,
                                 rooms.room_number,
                                 booking_history.booking_ticket_no,
                                 booking_history.person_full_name as booked_by_name,
                                 booking_history.person_phone as booked_by_phone')
-                        ->join('users', 'users.user_id = reservations.user_id', 'left')
+                        ->join('staff', 'staff.staff_id = reservations.staff_id', 'left')
                         ->join('booking_history', 'booking_history.history_id = reservations.history_id', 'left')
                         ->join('hotels', 'hotels.hotel_id = booking_history.hotel_id', 'left')
                         ->join('rooms', 'rooms.room_id = booking_history.room_id', 'left');
 
         if (!empty($searchTerm)) {
             $builder->groupStart()
-                   ->like('users.full_name', $searchTerm)
-                   ->orLike('users.email', $searchTerm)
+                   ->like('staff.full_name', $searchTerm)
+                   ->orLike('staff.email', $searchTerm)
+                   ->orLike('staff.role', $searchTerm)
                    ->orLike('hotels.name', $searchTerm)
                    ->orLike('rooms.room_number', $searchTerm)
                    ->orLike('booking_history.booking_ticket_no', $searchTerm)
