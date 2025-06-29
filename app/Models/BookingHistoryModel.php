@@ -270,7 +270,103 @@ class BookingHistoryModel extends Model
     }
 
     /**
-     * Get booking by ID with details
+     * Get bookings by hotel with filters (for staff)
+     */
+    public function getBookingsByHotel($hotelId, $status = null, $dateFrom = null, $dateTo = null, $search = null, $limit = 20, $offset = 0)
+    {
+        $builder = $this->select('booking_history.*,
+                                rooms.room_number,
+                                room_types.type_name,
+                                hotels.name as hotel_name')
+                        ->join('rooms', 'rooms.room_id = booking_history.room_id', 'left')
+                        ->join('room_types', 'room_types.room_type_id = rooms.room_type_id', 'left')
+                        ->join('hotels', 'hotels.hotel_id = booking_history.hotel_id', 'left')
+                        ->where('booking_history.hotel_id', $hotelId)
+                        ->orderBy('booking_history.created_at', 'DESC');
+
+        if ($status) {
+            $builder->where('booking_history.status', $status);
+        }
+
+        if ($dateFrom) {
+            $builder->where('booking_history.check_in_date >=', $dateFrom);
+        }
+
+        if ($dateTo) {
+            $builder->where('booking_history.check_out_date <=', $dateTo);
+        }
+
+        if ($search) {
+            $builder->groupStart()
+                   ->like('booking_history.person_full_name', $search)
+                   ->orLike('booking_history.person_phone', $search)
+                   ->orLike('booking_history.booking_ticket_no', $search)
+                   ->orLike('rooms.room_number', $search)
+                   ->groupEnd();
+        }
+
+        return $builder->limit($limit, $offset)->findAll();
+    }
+
+    /**
+     * Update booking status
+     */
+    public function updateBookingStatus($bookingId, $status)
+    {
+        return $this->update($bookingId, ['status' => $status]);
+    }
+
+    /**
+     * Get today's check-ins
+     */
+    public function getTodayCheckIns($hotelId)
+    {
+        return $this->select('booking_history.*,
+                            rooms.room_number,
+                            room_types.type_name')
+                    ->join('rooms', 'rooms.room_id = booking_history.room_id', 'left')
+                    ->join('room_types', 'room_types.room_type_id = rooms.room_type_id', 'left')
+                    ->where('booking_history.hotel_id', $hotelId)
+                    ->where('booking_history.check_in_date', date('Y-m-d'))
+                    ->where('booking_history.status', 'confirmed')
+                    ->findAll();
+    }
+
+    /**
+     * Get today's check-outs
+     */
+    public function getTodayCheckOuts($hotelId)
+    {
+        return $this->select('booking_history.*,
+                            rooms.room_number,
+                            room_types.type_name')
+                    ->join('rooms', 'rooms.room_id = booking_history.room_id', 'left')
+                    ->join('room_types', 'room_types.room_type_id = rooms.room_type_id', 'left')
+                    ->where('booking_history.hotel_id', $hotelId)
+                    ->where('booking_history.check_out_date', date('Y-m-d'))
+                    ->where('booking_history.status', 'confirmed')
+                    ->findAll();
+    }
+
+    /**
+     * Get current guests
+     */
+    public function getCurrentGuests($hotelId)
+    {
+        return $this->select('booking_history.*,
+                            rooms.room_number,
+                            room_types.type_name')
+                    ->join('rooms', 'rooms.room_id = booking_history.room_id', 'left')
+                    ->join('room_types', 'room_types.room_type_id = rooms.room_type_id', 'left')
+                    ->where('booking_history.hotel_id', $hotelId)
+                    ->where('booking_history.check_in_date <=', date('Y-m-d'))
+                    ->where('booking_history.check_out_date >', date('Y-m-d'))
+                    ->where('booking_history.status', 'confirmed')
+                    ->findAll();
+    }
+
+    /**
+     * Get booking with details by ID (for staff view)
      */
     public function getBookingWithDetailsById($bookingId)
     {
@@ -279,15 +375,26 @@ class BookingHistoryModel extends Model
                             hotels.address as hotel_address,
                             hotels.city as hotel_city,
                             hotels.country as hotel_country,
+                            hotels.phone as hotel_phone,
                             rooms.room_number,
                             rooms.floor,
                             room_types.type_name,
                             room_types.description as room_description,
-                            room_types.capacity')
+                            room_types.capacity,
+                            room_types.base_price')
                     ->join('hotels', 'hotels.hotel_id = booking_history.hotel_id', 'left')
                     ->join('rooms', 'rooms.room_id = booking_history.room_id', 'left')
                     ->join('room_types', 'room_types.room_type_id = rooms.room_type_id', 'left')
                     ->where('booking_history.history_id', $bookingId)
                     ->first();
+    }
+
+    /**
+     * Add pending status to validation rules for staff bookings
+     */
+    public function addPendingStatus()
+    {
+        $this->validationRules['status'] = 'permit_empty|in_list[pending,confirmed,cancelled,completed]';
+        $this->validationMessages['status']['in_list'] = 'Status must be one of: pending, confirmed, cancelled, completed';
     }
 }
