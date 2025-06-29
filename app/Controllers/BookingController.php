@@ -7,7 +7,7 @@ use App\Models\RoomModel;
 use App\Models\RoomTypeModel;
 use App\Models\BookingHistoryModel;
 
-class BookingController extends BaseController
+class CustomerBookingController extends BaseController
 {
     protected $hotelModel;
     protected $roomModel;
@@ -269,7 +269,7 @@ class BookingController extends BaseController
                 'total_price' => $totalPrice,
                 'guests_count' => $data['guests'],
                 'guest_email' => !empty($data['guest_email']) ? trim($data['guest_email']) : null,
-                'status' => 'confirmed'
+                'status' => 'pending' // CHANGED FROM 'confirmed' TO 'pending'
             ];
 
             $bookingId = $this->bookingHistoryModel->insert($bookingData);
@@ -280,7 +280,7 @@ class BookingController extends BaseController
 
                 return $this->response->setJSON([
                     'success' => true,
-                    'message' => 'Booking confirmed successfully!',
+                    'message' => 'Booking request submitted successfully! Your booking is pending confirmation.',
                     'booking_ticket' => $bookingTicket,
                     'booking_id' => $bookingId,
                     'hotel_name' => $hotel['name'] ?? 'Unknown Hotel',
@@ -290,7 +290,8 @@ class BookingController extends BaseController
                     'check_out' => $data['check_out_date'],
                     'total_price' => $totalPrice,
                     'nights' => $nights,
-                    'guests' => $data['guests']
+                    'guests' => $data['guests'],
+                    'status' => 'pending' // ADD STATUS TO RESPONSE
                 ]);
             } else {
                 return $this->response->setJSON([
@@ -309,7 +310,7 @@ class BookingController extends BaseController
     }
 
     /**
-     * Update booking details (before check-in) - Fixed the syntax error
+     * Update booking details (before check-in)
      */
     public function updateBooking()
     {
@@ -324,7 +325,7 @@ class BookingController extends BaseController
         }
 
         try {
-            // Find booking by ticket and verify phone - Fixed the syntax error here
+            // Find booking by ticket and verify phone
             $booking = $this->bookingHistoryModel->getBookingByTicket($ticketNo);
             
             if (!$booking || $booking['person_phone'] !== $phone) {
@@ -334,11 +335,11 @@ class BookingController extends BaseController
                 ]);
             }
 
-            // Check if booking can be modified
-            if ($booking['status'] !== 'confirmed') {
+            // Check if booking can be modified - UPDATED TO INCLUDE PENDING
+            if (!in_array($booking['status'], ['pending', 'confirmed'])) {
                 return $this->response->setJSON([
                     'success' => false,
-                    'message' => 'Only confirmed bookings can be modified'
+                    'message' => 'Only pending or confirmed bookings can be modified'
                 ]);
             }
 
@@ -474,7 +475,7 @@ class BookingController extends BaseController
                 ]);
             }
 
-            // Check if booking can be cancelled
+            // Check if booking can be cancelled - UPDATED TO INCLUDE PENDING
             if ($booking['status'] === 'cancelled') {
                 return $this->response->setJSON([
                     'success' => false,
@@ -489,12 +490,19 @@ class BookingController extends BaseController
                 ]);
             }
 
-            // Check cancellation policy (can't cancel on check-in day)
-            $today = date('Y-m-d');
-            if ($booking['check_in_date'] <= $today) {
+            if ($booking['status'] === 'checked_in') {
                 return $this->response->setJSON([
                     'success' => false,
-                    'message' => 'Cannot cancel booking on or after check-in date'
+                    'message' => 'Cannot cancel checked-in booking'
+                ]);
+            }
+
+            // Check cancellation policy (can't cancel on check-in day for confirmed bookings)
+            $today = date('Y-m-d');
+            if ($booking['status'] === 'confirmed' && $booking['check_in_date'] <= $today) {
+                return $this->response->setJSON([
+                    'success' => false,
+                    'message' => 'Cannot cancel confirmed booking on or after check-in date'
                 ]);
             }
 
