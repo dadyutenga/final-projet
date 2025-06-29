@@ -48,9 +48,8 @@ class BookingHistoryModel extends Model
         'total_price'      => 'required|decimal|greater_than[0]',
         'guests_count'     => 'required|is_natural_no_zero',
         'guest_email'      => 'permit_empty|valid_email',
-        'status'           => 'permit_empty|in_list[confirmed,cancelled,completed,checked_in]', // FIXED: added check_in
-        'action_date'      => 'permit_empty|valid_date',
-        'checked_in_date'  => 'permit_empty|valid_date'  // ADD THIS
+        'status'           => 'permit_empty|in_list[pending,confirmed,cancelled,completed,checked_in]', // ADDED pending and checked_in
+        'action_date'      => 'permit_empty|valid_date'
     ];
     
     protected $validationMessages   = [
@@ -96,7 +95,7 @@ class BookingHistoryModel extends Model
             'valid_email' => 'Please enter a valid email address'
         ],
         'status' => [
-            'in_list' => 'Status must be one of: confirmed, cancelled, completed, checked_in' // UPDATED
+            'in_list' => 'Status must be one of: pending, confirmed, cancelled, completed, checked_in' // UPDATED MESSAGE
         ]
     ];
     
@@ -175,85 +174,43 @@ class BookingHistoryModel extends Model
 
     /**
      * Get booking statistics
-   
-    
-     * Check room availability for dates (used by controller)
      */
-    
-    /**
-     * Calculate total nights between two dates
-     */
-    public function calculateTotalNights($checkIn, $checkOut)
+    public function getBookingStatistics($hotelId = null, $dateFrom = null, $dateTo = null)
     {
-        $checkInDate = new \DateTime($checkIn);
-        $checkOutDate = new \DateTime($checkOut);
-        $interval = $checkInDate->diff($checkOutDate);
-        return $interval->days;
-    }
+        $builder = $this->select('status, COUNT(*) as count, SUM(total_price) as revenue')
+                        ->groupBy('status');
 
-    /**
-     * Get bookings by hotel with filters (simplified for debugging)
-     */
-    public function getBookingsByHotel($hotelId, $status = null, $dateFrom = null, $dateTo = null, $search = null, $limit = 20, $offset = 0)
-    {
-        $builder = $this->select('booking_history.*,
-                                rooms.room_number,
-                                room_types.type_name,
-                                hotels.name as hotel_name')
-                        ->join('rooms', 'rooms.room_id = booking_history.room_id', 'left')
-                        ->join('room_types', 'room_types.room_type_id = rooms.room_type_id', 'left')
-                        ->join('hotels', 'hotels.hotel_id = booking_history.hotel_id', 'left')
-                        ->where('booking_history.hotel_id', $hotelId)
-                        ->orderBy('booking_history.created_at', 'DESC');
+        if ($hotelId) {
+            $builder->where('hotel_id', $hotelId);
+        }
 
-        // Remove all filters temporarily to see all data
-        // if ($status) {
-        //     $builder->where('booking_history.status', $status);
-        // }
+        if ($dateFrom) {
+            $builder->where('check_in_date >=', $dateFrom);
+        }
 
-        // if ($dateFrom) {
-        //     $builder->where('booking_history.check_in_date >=', $dateFrom);
-        // }
+        if ($dateTo) {
+            $builder->where('check_out_date <=', $dateTo);
+        }
 
-        // if ($dateTo) {
-        //     $builder->where('booking_history.check_out_date <=', $dateTo);
-        // }
+        $results = $builder->findAll();
 
-        // if ($search) {
-        //     $builder->groupStart()
-        //            ->like('booking_history.person_full_name', $search)
-        //            ->orLike('booking_history.person_phone', $search)
-        //            ->orLike('booking_history.booking_ticket_no', $search)
-        //            ->orLike('rooms.room_number', $search)
-        //            ->groupEnd();
-        // }
-
-        return $builder->limit($limit, $offset)->findAll();
-    }
-
-    /**
-     * Get booking statistics (simplified)
-     */
-    public function getBookingStatistics($hotelId, $dateFrom = null, $dateTo = null)
-    {
-        // Get all bookings for this hotel
-        $allBookings = $this->where('hotel_id', $hotelId)->findAll();
-        
         $stats = [
-            'total' => ['count' => 0, 'revenue' => 0],
-            'pending' => ['count' => 0],
-            'confirmed' => ['count' => 0],
-            'cancelled' => ['count' => 0],
-            'completed' => ['count' => 0]
+            'pending' => ['count' => 0, 'revenue' => 0],    // ADDED pending
+            'confirmed' => ['count' => 0, 'revenue' => 0],
+            'cancelled' => ['count' => 0, 'revenue' => 0],
+            'completed' => ['count' => 0, 'revenue' => 0],
+            'checked_in' => ['count' => 0, 'revenue' => 0], // ADDED checked_in
+            'total' => ['count' => 0, 'revenue' => 0]
         ];
 
-        foreach ($allBookings as $booking) {
-            $stats['total']['count']++;
-            $stats['total']['revenue'] += $booking['total_price'];
-            
-            $status = $booking['status'] ?? 'confirmed';
-            if (isset($stats[$status])) {
-                $stats[$status]['count']++;
+        foreach ($results as $result) {
+            $stats[$result['status']] = [
+                'count' => $result['count'],
+                'revenue' => $result['revenue'] ?? 0
+            ];
+            $stats['total']['count'] += $result['count'];
+            if ($result['status'] !== 'cancelled') {
+                $stats['total']['revenue'] += $result['revenue'] ?? 0;
             }
         }
 
@@ -271,41 +228,40 @@ class BookingHistoryModel extends Model
                           ->where('check_in_date <', $checkOut)
                           ->where('check_out_date >', $checkIn)
                       ->groupEnd()
-                      ->countAllResultsExceptDeleted();
+                      ->countAllResults();
 
         return $count == 0;
     }
 
     /**
-     * Get booking with details by ID
+     * Calculate total nights between two dates
      */
-    public function getBookingWithDetailsById($bookingId)
+    public function calculateTotalNights($checkIn, $checkOut)
     {
-        return $this->select('booking_history.*,
-                            hotels.name as hotel_name,
-                            hotels.address as hotel_address,
-                            hotels.city as hotel_city,
-                            hotels.country as hotel_country,
-                            hotels.phone as hotel_phone,
-                            rooms.room_number,
-                            rooms.floor,
-                            room_types.type_name,
-                            room_types.description as room_description,
-                            room_types.capacity,
-                            room_types.base_price')
-                    ->join('hotels', 'hotels.hotel_id = booking_history.hotel_id', 'left')
-                    ->join('rooms', 'rooms.room_id = booking_history.room_id', 'left')
-                    ->join('room_types', 'room_types.room_type_id = rooms.room_type_id', 'left')
-                    ->where('booking_history.history_id', $bookingId)
-                    ->first();
+        $checkInDate = new \DateTime($checkIn);
+        $checkOutDate = new \DateTime($checkOut);
+        $interval = $checkInDate->diff($checkOutDate);
+        return $interval->days;
     }
 
     /**
-     * Update booking status
+     * Generate unique booking ticket number
      */
-    public function updateBookingStatus($bookingId, $status)
+    public function generateTicketNumber($hotelId)
     {
-        return $this->update($bookingId, ['status' => $status]);
+        $prefix = 'BK' . str_pad($hotelId, 2, '0', STR_PAD_LEFT);
+        $date = date('Ymd');
+        $random = str_pad(mt_rand(1, 9999), 4, '0', STR_PAD_LEFT);
+        
+        $ticketNo = $prefix . $date . $random;
+        
+        // Make sure it's unique
+        while ($this->where('booking_ticket_no', $ticketNo)->first()) {
+            $random = str_pad(mt_rand(1, 9999), 4, '0', STR_PAD_LEFT);
+            $ticketNo = $prefix . $date . $random;
+        }
+        
+        return $ticketNo;
     }
 
     /**
@@ -317,71 +273,13 @@ class BookingHistoryModel extends Model
     }
 
     /**
-     * Get today's check-ins
+     * Get booking with details by ticket number
      */
-    public function getTodayCheckIns($hotelId)
-    {
-        return $this->select('booking_history.*,
-                            rooms.room_number,
-                            room_types.type_name')
-                    ->join('rooms', 'rooms.room_id = booking_history.room_id', 'left')
-                    ->join('room_types', 'room_types.room_type_id = rooms.room_type_id', 'left')
-                    ->where('booking_history.hotel_id', $hotelId)
-                    ->where('booking_history.check_in_date', date('Y-m-d'))
-                    ->where('booking_history.status', 'check_in') // CHANGED to check_in
-                    ->findAll();
-    }
-
+   
+   
     /**
-     * Get today's check-outs
+     * Get booking statistics
      */
-    public function getTodayCheckOuts($hotelId)
-    {
-        return $this->select('booking_history.*,
-                            rooms.room_number,
-                            room_types.type_name')
-                    ->join('rooms', 'rooms.room_id = booking_history.room_id', 'left')
-                    ->join('room_types', 'room_types.room_type_id = rooms.room_type_id', 'left')
-                    ->where('booking_history.hotel_id', $hotelId)
-                    ->where('booking_history.check_out_date', date('Y-m-d'))
-                    ->where('booking_history.status', 'check_in') // CHANGED to check_in
-                    ->findAll();
-    }
+   
 
-    /**
-     * Get current guests
-     */
-    public function getCurrentGuests($hotelId)
-    {
-        return $this->select('booking_history.*,
-                            rooms.room_number,
-                            room_types.type_name')
-                    ->join('rooms', 'rooms.room_id = booking_history.room_id', 'left')
-                    ->join('room_types', 'room_types.room_type_id = rooms.room_type_id', 'left')
-                    ->where('booking_history.hotel_id', $hotelId)
-                    ->where('booking_history.check_in_date <=', date('Y-m-d'))
-                    ->where('booking_history.check_out_date >', date('Y-m-d'))
-                    ->where('booking_history.status', 'check_in') // CHANGED to check_in
-                    ->findAll();
-    }
-
-    /**
-     * Generate unique ticket number
-     */
-    public function generateTicketNumber($hotelId)
-    {
-        $prefix = 'HTL' . str_pad($hotelId, 3, '0', STR_PAD_LEFT);
-        $timestamp = date('ymd');
-        $random = mt_rand(1000, 9999);
-        
-        $ticketNo = $prefix . $timestamp . $random;
-        
-        // Check if it already exists
-        while ($this->where('booking_ticket_no', $ticketNo)->first()) {
-            $random = mt_rand(1000, 9999);
-            $ticketNo = $prefix . $timestamp . $random;
-        }
-        
-        return $ticketNo;
-    }
 }
