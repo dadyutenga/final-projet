@@ -93,7 +93,7 @@ class BookingHistoryModel extends Model
             'valid_email' => 'Please enter a valid email address'
         ],
         'status' => [
-            'in_list' => 'Status must be one of: confirmed, cancelled, completed'
+            'in_list' => 'Status must be one of: confirmed, cancelled, completed '
         ]
     ];
     
