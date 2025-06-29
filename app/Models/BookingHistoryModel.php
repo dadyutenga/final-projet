@@ -48,8 +48,9 @@ class BookingHistoryModel extends Model
         'total_price'      => 'required|decimal|greater_than[0]',
         'guests_count'     => 'required|is_natural_no_zero',
         'guest_email'      => 'permit_empty|valid_email',
-        'status'           => 'permit_empty|in_list[confirmed,cancelled,completed]',
-        'action_date'      => 'permit_empty|valid_date'
+        'status'           => 'permit_empty|in_list[confirmed,cancelled,completed,checked_in]', // FIXED: added check_in
+        'action_date'      => 'permit_empty|valid_date',
+        'checked_in_date'  => 'permit_empty|valid_date'  // ADD THIS
     ];
     
     protected $validationMessages   = [
@@ -95,7 +96,7 @@ class BookingHistoryModel extends Model
             'valid_email' => 'Please enter a valid email address'
         ],
         'status' => [
-            'in_list' => 'Status must be one of: confirmed, cancelled, completed'
+            'in_list' => 'Status must be one of: confirmed, cancelled, completed, checked_in' // UPDATED
         ]
     ];
     
@@ -174,48 +175,8 @@ class BookingHistoryModel extends Model
 
     /**
      * Get booking statistics
-     */
-    public function getBookingStatistics($hotelId = null, $dateFrom = null, $dateTo = null)
-    {
-        $builder = $this->select('status, COUNT(*) as count, SUM(total_price) as revenue')
-                        ->groupBy('status');
-
-        if ($hotelId) {
-            $builder->where('hotel_id', $hotelId);
-        }
-
-        if ($dateFrom) {
-            $builder->where('check_in_date >=', $dateFrom);
-        }
-
-        if ($dateTo) {
-            $builder->where('check_out_date <=', $dateTo);
-        }
-
-        $results = $builder->findAll();
-
-        $stats = [
-            'confirmed' => ['count' => 0, 'revenue' => 0],
-            'cancelled' => ['count' => 0, 'revenue' => 0],
-            'completed' => ['count' => 0, 'revenue' => 0],
-            'total' => ['count' => 0, 'revenue' => 0]
-        ];
-
-        foreach ($results as $result) {
-            $stats[$result['status']] = [
-                'count' => $result['count'],
-                'revenue' => $result['revenue'] ?? 0
-            ];
-            $stats['total']['count'] += $result['count'];
-            if ($result['status'] !== 'cancelled') {
-                $stats['total']['revenue'] += $result['revenue'] ?? 0;
-            }
-        }
-
-        return $stats;
-    }
-
-    /**
+   
+    
      * Check room availability for dates (used by controller)
      */
     
