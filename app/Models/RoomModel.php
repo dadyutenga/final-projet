@@ -217,96 +217,21 @@ class RoomModel extends Model
     }
 
     /**
-     * Get available rooms by hotel and date range
+     * Get available rooms for a hotel
      */
     public function getAvailableRooms($hotelId, $checkIn = null, $checkOut = null, $roomTypeId = null)
     {
         $builder = $this->select('rooms.*, room_types.type_name, room_types.capacity, room_types.base_price')
-                       ->join('room_types', 'room_types.room_type_id = rooms.room_type_id')
-                       ->where('rooms.hotel_id', $hotelId)
-                       ->where('rooms.status', 'available');
+                        ->join('room_types', 'room_types.room_type_id = rooms.room_type_id')
+                        ->where('rooms.hotel_id', $hotelId)
+                        ->where('rooms.status', 'available')
+                        ->orderBy('rooms.room_number', 'ASC');
 
         if ($roomTypeId) {
             $builder->where('rooms.room_type_id', $roomTypeId);
         }
 
-        // If dates are provided, exclude rooms that are booked
-        if ($checkIn && $checkOut) {
-            $db = \Config\Database::connect();
-            
-            // Check if bookings table exists
-            if ($db->tableExists('bookings')) {
-                $bookedRoomIds = $db->table('bookings')
-                                   ->select('DISTINCT room_id')
-                                   ->where('status !=', 'cancelled')
-                                   ->groupStart()
-                                       ->where('check_in_date <=', $checkOut)
-                                       ->where('check_out_date >=', $checkIn)
-                                   ->groupEnd()
-                                   ->get()
-                                   ->getResultArray();
-
-                if (!empty($bookedRoomIds)) {
-                    $bookedIds = array_column($bookedRoomIds, 'room_id');
-                    $builder->whereNotIn('rooms.room_id', $bookedIds);
-                }
-            }
-        }
-
-        return $builder->orderBy('rooms.room_number', 'ASC')->findAll();
-    }
-
-    /**
-     * Get rooms by hotel
-     */
-    public function getRoomsByHotel($hotelId)
-    {
-        return $this->select('rooms.*, room_types.type_name, room_types.capacity, room_types.base_price')
-                   ->join('room_types', 'room_types.room_type_id = rooms.room_type_id')
-                   ->where('rooms.hotel_id', $hotelId)
-                   ->orderBy('rooms.room_number', 'ASC')
-                   ->findAll();
-    }
-
-    /**
-     * Get rooms by type
-     */
-    public function getRoomsByType($roomTypeId)
-    {
-        return $this->where('room_type_id', $roomTypeId)
-                   ->orderBy('room_number', 'ASC')
-                   ->findAll();
-    }
-
-    /**
-     * Get room occupancy rate
-     */
-    public function getRoomOccupancyRate($hotelId, $startDate = null, $endDate = null)
-    {
-        $totalRooms = $this->where('hotel_id', $hotelId)->countAllResults();
-        
-        if ($totalRooms == 0) {
-            return 0;
-        }
-        
-        $occupiedRooms = $this->where('hotel_id', $hotelId)
-                             ->where('status', 'occupied')
-                             ->countAllResults();
-        
-        return round(($occupiedRooms / $totalRooms) * 100, 2);
-    }
-
-    /**
-     * Get rooms maintenance schedule
-     */
-    public function getMaintenanceRooms($hotelId)
-    {
-        return $this->select('rooms.*, room_types.type_name')
-                   ->join('room_types', 'room_types.room_type_id = rooms.room_type_id')
-                   ->where('rooms.hotel_id', $hotelId)
-                   ->where('rooms.status', 'maintenance')
-                   ->orderBy('rooms.updated_at', 'DESC')
-                   ->findAll();
+        return $builder->findAll();
     }
 
     /**
@@ -314,10 +239,6 @@ class RoomModel extends Model
      */
     public function updateRoomStatus($roomId, $status)
     {
-        if (!in_array($status, ['available', 'occupied', 'maintenance'])) {
-            return false;
-        }
-
         return $this->update($roomId, ['status' => $status]);
     }
 

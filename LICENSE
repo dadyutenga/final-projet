@@ -1,8 +1,0 @@
-
-
-If it still redirects to dashboard, the issue might be:
-
-1. **Session not set properly** - Check if `staff_logged_in` session exists
-2. **Database connection issues** - The try-catch will show any DB errors
-3. **Missing database tables** - Make sure your migration ran successfully
-
