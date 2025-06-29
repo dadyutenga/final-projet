@@ -864,8 +864,8 @@
                 <div class="footer-section">
                     <h3>Contact Info</h3>
                     <ul>
-                        <li><i class="fas fa-map-marker-alt"></i> 123 Luxury Avenue, City Center</li>
-                        <li><i class="fas fa-phone"></i> +1 (555) 123-4567</li>
+                        <li><i class="fas fa-map-marker-alt"></i> Bibi  Titi </li>
+                        <li><i class="fas fa-phone"></i> No Phone</li>
                         <li><i class="fas fa-envelope"></i> info@hotelmanagementsystem.com</li>
                         <li><i class="fas fa-clock"></i> 24/7 Front Desk Service</li>
                     </ul>

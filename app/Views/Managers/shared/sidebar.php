@@ -44,7 +44,7 @@
         
         <div class="nav-section">
             <div class="nav-section-title">Settings</div>
-            <a href="<?= base_url('admin/profile') ?>" class="nav-item <?= current_url() == base_url('admin/profile') ? 'active' : '' ?>" data-section="profile">
+            <a href="<?= base_url('manager/profile') ?>" class="nav-item <?= current_url() == base_url('admin/profile') ? 'active' : '' ?>" data-section="profile">
                 <i class="fas fa-user-circle"></i>
                 <span>Profile</span>
             </a>
