@@ -64,28 +64,28 @@
         <div class="nav-section">
             <div class="nav-section-title">Work Management</div>
             
-            <a href="<?= base_url('staff/reports') ?>" 
+            <a href="<?= base_url('staff/reservation') ?>" 
                class="nav-item <?= (strpos(current_url(), 'staff/reports') !== false) ? 'active' : '' ?>" 
                data-section="reports">
                 <i class="fas fa-chart-bar"></i>
                 <span>Reservation</span>
             </a>
 
-             <a href="<?= base_url('staff/reports') ?>" 
+             <a href="<?= base_url('staff/rooms') ?>" 
                class="nav-item <?= (strpos(current_url(), 'staff/reports') !== false) ? 'active' : '' ?>" 
                data-section="reports">
                 <i class="fas fa-chart-bar"></i>
-                <span>Room</span>
+                <span>Room Management</span>
             </a>
 
-            <a href="<?= base_url('staff/reports') ?>" 
+            <a href="<?= base_url('staff/bookings') ?>" 
                class="nav-item <?= (strpos(current_url(), 'staff/reports') !== false) ? 'active' : '' ?>" 
                data-section="reports">
                 <i class="fas fa-chart-bar"></i>
                 <span>Booking</span>
             </a>
 
-             <a href="<?= base_url('staff/reports') ?>" 
+             <a href="<?= base_url('staff/payments') ?>" 
                class="nav-item <?= (strpos(current_url(), 'staff/reports') !== false) ? 'active' : '' ?>" 
                data-section="reports">
                 <i class="fas fa-chart-bar"></i>
@@ -94,19 +94,6 @@
 
         </div>
 
-        <div class="nav-section">
-            <div class="nav-section-title">Communication</div>
-            
-            <a href="<?= base_url('staff/messages') ?>" 
-               class="nav-item <?= (strpos(current_url(), 'staff/messages') !== false) ? 'active' : '' ?>" 
-               data-section="messages">
-                <i class="fas fa-envelope"></i>
-                <span>Messages</span>
-                <span class="badge badge-info">3</span>
-            </a>
-
-           
-        </div>
         
         <div class="nav-section">
             <div class="nav-section-title">Settings</div>
