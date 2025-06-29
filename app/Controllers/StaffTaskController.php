@@ -342,11 +342,36 @@ class StaffTaskController extends Controller
             return $this->response->setJSON(['success' => false, 'message' => 'Invalid status']);
         }
         
-        if ($this->staffTaskModel->updateTaskStatus($id, $status)) {
-            return $this->response->setJSON(['success' => true, 'message' => 'Status updated successfully']);
+        try {
+            $data = [
+                'status' => $status,
+                'updated_at' => date('Y-m-d H:i:s')
+            ];
+            
+            // If marking as completed, also set completion date
+            if ($status === 'completed') {
+                $data['completed_at'] = date('Y-m-d H:i:s');
+            }
+            
+            if ($this->staffTaskModel->update($id, $data)) {
+                return $this->response->setJSON([
+                    'success' => true, 
+                    'message' => 'Task status updated successfully',
+                    'new_status' => $status
+                ]);
+            } else {
+                return $this->response->setJSON([
+                    'success' => false, 
+                    'message' => 'Failed to update task status'
+                ]);
+            }
+        } catch (\Exception $e) {
+            log_message('error', '[Task Status Update] ' . $e->getMessage());
+            return $this->response->setJSON([
+                'success' => false, 
+                'message' => 'An error occurred while updating task status'
+            ]);
         }
-        
-        return $this->response->setJSON(['success' => false, 'message' => 'Failed to update status']);
     }
 
     public function reassign($id = null)

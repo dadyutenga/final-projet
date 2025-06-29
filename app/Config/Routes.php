@@ -77,6 +77,8 @@ $routes->group('manager', ['namespace' => 'App\Controllers'], function($routes) 
     $routes->delete('staff-tasks/destroy/(:num)', 'StaffTaskController::destroy/$1');
     $routes->post('staff-tasks/update-status/(:num)', 'StaffTaskController::updateStatus/$1');
     $routes->post('staff-tasks/reassign/(:num)', 'StaffTaskController::reassign/$1');
+    $routes->post('staff-tasks/update-status/(:num)', 'StaffTaskController::updateStatus/$1');
+
 });
 
 $routes->group('staff', ['namespace' => 'App\Controllers'], function($routes) {

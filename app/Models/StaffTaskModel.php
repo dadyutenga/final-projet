@@ -101,18 +101,21 @@ class StaffTaskModel extends Model
      */
     protected function checkOverdueStatus(array $data)
     {
-        if (isset($data['id'])) {
-            $task = $this->find($data['id']);
-            if ($task && $task['due_date'] && $task['status'] !== 'completed') {
-                $dueDate = strtotime($task['due_date']);
-                $today = strtotime(date('Y-m-d'));
-
-                if ($today > $dueDate && $task['status'] !== 'overdue') {
-                    $data['data']['status'] = 'overdue';
-                }
-            }
+        // Only check overdue status if we have the due_date field
+        if (!isset($data['data']['due_date'])) {
+            return $data; // Skip overdue check if due_date is not provided
         }
-
+        
+        $dueDate = $data['data']['due_date'];
+        $currentDate = date('Y-m-d');
+        
+        // If task is past due date and not completed, mark as overdue
+        if ($dueDate < $currentDate && 
+            isset($data['data']['status']) && 
+            $data['data']['status'] !== 'completed') {
+            $data['data']['status'] = 'overdue';
+        }
+        
         return $data;
     }
 
@@ -292,12 +295,24 @@ class StaffTaskModel extends Model
      */
     public function updateTaskStatus($taskId, $status)
     {
-        $data = ['status' => $status];
+        // Get the current task data first
+        $currentTask = $this->find($taskId);
         
-        if ($status === 'completed') {
-            $data['completed_date'] = date('Y-m-d H:i:s');
+        if (!$currentTask) {
+            return false;
         }
         
+        $data = [
+            'status' => $status,
+            'updated_at' => date('Y-m-d H:i:s')
+        ];
+        
+        // If marking as completed, also set completion date
+        if ($status === 'completed') {
+            $data['completed_at'] = date('Y-m-d H:i:s');
+        }
+        
+        // Use the base update method directly to avoid the beforeUpdate callback
         return $this->update($taskId, $data);
     }
 

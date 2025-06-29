@@ -244,6 +244,16 @@
             color: var(--white);
         }
 
+        .btn-success {
+            background: var(--success-color);
+            color: var(--white);
+        }
+
+        .btn-success:hover {
+            background: #218838;
+            color: var(--white);
+        }
+
         .stats-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
@@ -526,6 +536,43 @@
                 display: block;
             }
         }
+
+        /* Loading overlay for conclude action */
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 10000;
+        }
+
+        .loading-spinner {
+            background: var(--white);
+            padding: 2rem;
+            border-radius: 12px;
+            text-align: center;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+        }
+
+        .spinner {
+            border: 4px solid var(--light-gray);
+            border-top: 4px solid var(--primary-color);
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 1rem;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
     </style>
 </head>
 <body>
@@ -534,6 +581,14 @@
     </button>
 
     <div class="sidebar-overlay" onclick="closeSidebar()"></div>
+    
+    <!-- Loading overlay -->
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="loading-spinner">
+            <div class="spinner"></div>
+            <p>Concluding task...</p>
+        </div>
+    </div>
     
     <?= $this->include('managers/shared/sidebar') ?>
 
@@ -692,6 +747,9 @@
                                 <a href="<?= base_url('manager/staff-tasks/edit/' . $task['task_id']) ?>" class="btn btn-warning btn-sm">
                                     <i class="fas fa-edit"></i> Edit
                                 </a>
+                                <button onclick="concludeTask(<?= $task['task_id'] ?>)" class="btn btn-success btn-sm">
+                                    <i class="fas fa-check"></i> Conclude
+                                </button>
                             <?php endif; ?>
                             <form action="<?= base_url('manager/staff-tasks/destroy/' . $task['task_id']) ?>" method="post" style="display: inline-block;">
                                 <?= csrf_field() ?>
@@ -731,6 +789,104 @@
             
             sidebar.classList.remove('show');
             overlay.classList.remove('show');
+        }
+
+        async function concludeTask(taskId) {
+            if (!confirm('Are you sure you want to conclude this task? This will mark it as completed.')) {
+                return;
+            }
+
+            const loadingOverlay = document.getElementById('loadingOverlay');
+            loadingOverlay.style.display = 'flex';
+
+            try {
+                const formData = new FormData();
+                formData.append('status', 'completed');
+                formData.append('<?= csrf_token() ?>', '<?= csrf_hash() ?>');
+
+                const response = await fetch(`<?= base_url('manager/staff-tasks/update-status/') ?>${taskId}`, {
+                    method: 'POST',
+                    body: formData,
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest'
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                const result = await response.json();
+                console.log('Server response:', result); // For debugging
+
+                if (result.success) {
+                    showAlert('Task concluded successfully!', 'success');
+                    
+                    // Update the task card immediately without reload
+                    updateTaskCardStatus(taskId, 'completed');
+                    
+                    // Optional: Reload after delay
+                    setTimeout(() => {
+                        window.location.reload();
+                    }, 1500);
+                } else {
+                    showAlert(result.message || 'Failed to conclude task', 'error');
+                }
+            } catch (error) {
+                console.error('Error concluding task:', error);
+                showAlert('An error occurred while concluding the task: ' + error.message, 'error');
+            } finally {
+                loadingOverlay.style.display = 'none';
+            }
+        }
+
+        function updateTaskCardStatus(taskId, newStatus) {
+            // Find the task card and update its status immediately
+            const taskCards = document.querySelectorAll('.task-card');
+            taskCards.forEach(card => {
+                const taskIdElement = card.querySelector('small');
+                if (taskIdElement && taskIdElement.textContent.includes(`Task #${taskId}`)) {
+                    // Update status badge
+                    const statusBadge = card.querySelector('.task-status');
+                    statusBadge.className = `task-status status-${newStatus}`;
+                    statusBadge.textContent = 'Completed';
+                    
+                    // Remove action buttons
+                    const actionsDiv = card.querySelector('.task-actions');
+                    const editBtn = actionsDiv.querySelector('.btn-warning');
+                    const concludeBtn = actionsDiv.querySelector('.btn-success');
+                    
+                    if (editBtn) editBtn.remove();
+                    if (concludeBtn) concludeBtn.remove();
+                    
+                    // Update card border color
+                    card.className = `task-card ${newStatus}`;
+                }
+            });
+        }
+
+        function showAlert(message, type) {
+            // Remove existing alerts
+            const existingAlerts = document.querySelectorAll('.alert');
+            existingAlerts.forEach(alert => alert.remove());
+
+            // Create new alert
+            const alertDiv = document.createElement('div');
+            alertDiv.className = `alert alert-${type}`;
+            alertDiv.innerHTML = `
+                <i class="fas fa-${type === 'success' ? 'check-circle' : 'exclamation-triangle'}"></i>
+                ${message}
+            `;
+
+            // Insert alert at the top of main content
+            const mainContent = document.querySelector('.main-content');
+            const pageHeader = document.querySelector('.page-header');
+            mainContent.insertBefore(alertDiv, pageHeader.nextSibling);
+
+            // Auto-hide alert after 5 seconds
+            setTimeout(() => {
+                alertDiv.remove();
+            }, 5000);
         }
     </script>
 </body>
