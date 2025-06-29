@@ -46,7 +46,7 @@ class BookingHistoryModel extends Model
         'total_price'      => 'required|decimal|greater_than[0]',
         'guests_count'     => 'required|is_natural_no_zero',
         'guest_email'      => 'permit_empty|valid_email',
-        'status'           => 'permit_empty|in_list[confirmed,cancelled,completed]',
+        'status'           => 'permit_empty|in_list[pending,confirmed,cancelled,completed,checked_in]', // ADDED pending and checked_in
         'action_date'      => 'permit_empty|valid_date'
     ];
     
@@ -93,7 +93,7 @@ class BookingHistoryModel extends Model
             'valid_email' => 'Please enter a valid email address'
         ],
         'status' => [
-            'in_list' => 'Status must be one of: confirmed, cancelled, completed '
+            'in_list' => 'Status must be one of: pending, confirmed, cancelled, completed, checked_in' // UPDATED MESSAGE
         ]
     ];
     
@@ -219,9 +219,11 @@ class BookingHistoryModel extends Model
         $results = $builder->findAll();
 
         $stats = [
+            'pending' => ['count' => 0, 'revenue' => 0],    // ADDED pending
             'confirmed' => ['count' => 0, 'revenue' => 0],
             'cancelled' => ['count' => 0, 'revenue' => 0],
             'completed' => ['count' => 0, 'revenue' => 0],
+            'checked_in' => ['count' => 0, 'revenue' => 0], // ADDED checked_in
             'total' => ['count' => 0, 'revenue' => 0]
         ];
 
