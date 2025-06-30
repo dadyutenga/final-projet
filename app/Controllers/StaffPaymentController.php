@@ -263,14 +263,21 @@ class StaffPaymentController extends BaseController
             return redirect()->to('/staff/payments')->with('error', 'Payment not found');
         }
 
-        // Get reservation to check hotel access
-        $reservation = $this->reservationModel->getReservationWithDetails($payment['reservation_id']);
-        if ($reservation['hotel_id'] != $hotelId) {
-            return redirect()->to('/staff/payments')->with('error', 'Access denied');
-        }
-
         try {
+            // Get reservation to check hotel access
+            $reservation = $this->reservationModel->getReservationWithDetails($payment['reservation_id']);
+            if (!$reservation || $reservation['hotel_id'] != $hotelId) {
+                return redirect()->to('/staff/payments')->with('error', 'Access denied');
+            }
+
+            // Update payment status
             $this->paymentModel->updatePaymentStatus($paymentId, $status);
+            
+            // Update reservation status if payment is completed
+            if ($status == 'completed') {
+                $this->reservationModel->updateReservationStatus($payment['reservation_id'], 'confirmed');
+            }
+            
             return redirect()->back()->with('success', 'Payment status updated successfully');
         } catch (\Exception $e) {
             return redirect()->back()->with('error', 'Failed to update payment status: ' . $e->getMessage());
