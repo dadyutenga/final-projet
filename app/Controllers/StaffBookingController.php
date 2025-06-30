@@ -116,7 +116,14 @@ class StaffBookingController extends BaseController
      */
     public function create()
     {
-        $hotelId = session()->get('staff_hotel_id');
+        $staffId = session()->get('staff_id');
+        
+        // Get hotel_id from staff record instead of session
+        $db = \Config\Database::connect();
+        $staffQuery = $db->table('staff')->where('staff_id', $staffId)->get();
+        $staffData = $staffQuery->getRowArray();
+        
+        $hotelId = $staffData['hotel_id'] ?? null;
 
         // Get available rooms using existing method
         $availableRooms = $this->roomModel->getAvailableRooms($hotelId);
@@ -143,7 +150,13 @@ class StaffBookingController extends BaseController
     public function store()
     {
         $staffId = session()->get('staff_id');
-        $hotelId = session()->get('staff_hotel_id');
+        
+        // Get hotel_id from staff record instead of session
+        $db = \Config\Database::connect();
+        $staffQuery = $db->table('staff')->where('staff_id', $staffId)->get();
+        $staffData = $staffQuery->getRowArray();
+        
+        $hotelId = $staffData['hotel_id'] ?? null;
 
         // Validation rules
         $rules = [
@@ -236,6 +249,15 @@ class StaffBookingController extends BaseController
      */
     public function view($bookingId)
     {
+        $staffId = session()->get('staff_id');
+        
+        // Get hotel_id from staff record instead of session
+        $db = \Config\Database::connect();
+        $staffQuery = $db->table('staff')->where('staff_id', $staffId)->get();
+        $staffData = $staffQuery->getRowArray();
+        
+        $hotelId = $staffData['hotel_id'] ?? null;
+
         // Get booking with basic details first
         $booking = $this->bookingHistoryModel->find($bookingId);
 
@@ -244,7 +266,6 @@ class StaffBookingController extends BaseController
         }
 
         // Check if this booking belongs to staff's hotel
-        $hotelId = session()->get('staff_hotel_id');
         if ($booking['hotel_id'] != $hotelId) {
             return redirect()->to('/staff/bookings')->with('error', 'Access denied');
         }
@@ -265,13 +286,21 @@ class StaffBookingController extends BaseController
      */
     public function confirm($bookingId)
     {
+        $staffId = session()->get('staff_id');
+        
+        // Get hotel_id from staff record instead of session
+        $db = \Config\Database::connect();
+        $staffQuery = $db->table('staff')->where('staff_id', $staffId)->get();
+        $staffData = $staffQuery->getRowArray();
+        
+        $hotelId = $staffData['hotel_id'] ?? null;
+
         $booking = $this->bookingHistoryModel->find($bookingId);
         if (!$booking) {
             return redirect()->to('/staff/bookings')->with('error', 'Booking not found');
         }
 
         // Check if this booking belongs to staff's hotel
-        $hotelId = session()->get('staff_hotel_id');
         if ($booking['hotel_id'] != $hotelId) {
             return redirect()->to('/staff/bookings')->with('error', 'Access denied');
         }
@@ -293,13 +322,21 @@ class StaffBookingController extends BaseController
      */
     public function checkIn($bookingId)
     {
+        $staffId = session()->get('staff_id');
+        
+        // Get hotel_id from staff record instead of session
+        $db = \Config\Database::connect();
+        $staffQuery = $db->table('staff')->where('staff_id', $staffId)->get();
+        $staffData = $staffQuery->getRowArray();
+        
+        $hotelId = $staffData['hotel_id'] ?? null;
+
         $booking = $this->bookingHistoryModel->find($bookingId);
         if (!$booking) {
             return redirect()->to('/staff/bookings')->with('error', 'Booking not found');
         }
 
         // Check if this booking belongs to staff's hotel
-        $hotelId = session()->get('staff_hotel_id');
         if ($booking['hotel_id'] != $hotelId) {
             return redirect()->to('/staff/bookings')->with('error', 'Access denied');
         }
@@ -324,13 +361,21 @@ class StaffBookingController extends BaseController
      */
     public function complete($bookingId)
     {
+        $staffId = session()->get('staff_id');
+        
+        // Get hotel_id from staff record instead of session
+        $db = \Config\Database::connect();
+        $staffQuery = $db->table('staff')->where('staff_id', $staffId)->get();
+        $staffData = $staffQuery->getRowArray();
+        
+        $hotelId = $staffData['hotel_id'] ?? null;
+
         $booking = $this->bookingHistoryModel->find($bookingId);
         if (!$booking) {
             return redirect()->to('/staff/bookings')->with('error', 'Booking not found');
         }
 
         // Check if this booking belongs to staff's hotel
-        $hotelId = session()->get('staff_hotel_id');
         if ($booking['hotel_id'] != $hotelId) {
             return redirect()->to('/staff/bookings')->with('error', 'Access denied');
         }
@@ -355,13 +400,21 @@ class StaffBookingController extends BaseController
      */
     public function delete($bookingId)
     {
+        $staffId = session()->get('staff_id');
+        
+        // Get hotel_id from staff record instead of session
+        $db = \Config\Database::connect();
+        $staffQuery = $db->table('staff')->where('staff_id', $staffId)->get();
+        $staffData = $staffQuery->getRowArray();
+        
+        $hotelId = $staffData['hotel_id'] ?? null;
+
         $booking = $this->bookingHistoryModel->find($bookingId);
         if (!$booking) {
             return redirect()->to('/staff/bookings')->with('error', 'Booking not found');
         }
 
         // Check if this booking belongs to staff's hotel
-        $hotelId = session()->get('staff_hotel_id');
         if ($booking['hotel_id'] != $hotelId) {
             return redirect()->to('/staff/bookings')->with('error', 'Access denied');
         }
@@ -388,13 +441,21 @@ class StaffBookingController extends BaseController
      */
     public function cancel($bookingId)
     {
+        $staffId = session()->get('staff_id');
+        
+        // Get hotel_id from staff record instead of session
+        $db = \Config\Database::connect();
+        $staffQuery = $db->table('staff')->where('staff_id', $staffId)->get();
+        $staffData = $staffQuery->getRowArray();
+        
+        $hotelId = $staffData['hotel_id'] ?? null;
+
         $booking = $this->bookingHistoryModel->find($bookingId);
         if (!$booking) {
             return redirect()->to('/staff/bookings')->with('error', 'Booking not found');
         }
 
         // Check if this booking belongs to staff's hotel
-        $hotelId = session()->get('staff_hotel_id');
         if ($booking['hotel_id'] != $hotelId) {
             return redirect()->to('/staff/bookings')->with('error', 'Access denied');
         }
@@ -424,7 +485,15 @@ class StaffBookingController extends BaseController
             return $this->response->setJSON(['error' => 'Invalid request']);
         }
 
-        $hotelId = session()->get('staff_hotel_id');
+        $staffId = session()->get('staff_id');
+        
+        // Get hotel_id from staff record instead of session
+        $db = \Config\Database::connect();
+        $staffQuery = $db->table('staff')->where('staff_id', $staffId)->get();
+        $staffData = $staffQuery->getRowArray();
+        
+        $hotelId = $staffData['hotel_id'] ?? null;
+
         $checkIn = $this->request->getPost('check_in');
         $checkOut = $this->request->getPost('check_out');
         $roomTypeId = $this->request->getPost('room_type_id');
