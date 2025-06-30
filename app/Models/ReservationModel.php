@@ -126,19 +126,18 @@ class ReservationModel extends Model
                             hotels.phone as hotel_phone,
                             rooms.room_id,
                             rooms.room_number,
-                            rooms.floor_number,
                             room_types.type_name,
                             room_types.capacity,
                             room_types.base_price,
                             staff.full_name as assigned_staff_name,
                             staff.role as assigned_staff_role')
-                     ->join('booking_history', 'booking_history.history_id = reservations.history_id', 'left')
-                     ->join('hotels', 'hotels.hotel_id = booking_history.hotel_id', 'left')
-                     ->join('rooms', 'rooms.room_id = booking_history.room_id', 'left')
-                     ->join('room_types', 'room_types.room_type_id = rooms.room_type_id', 'left')
-                     ->join('staff', 'staff.staff_id = reservations.staff_id', 'left')
-                     ->where('reservations.reservation_id', $reservationId)
-                     ->first();
+                 ->join('booking_history', 'booking_history.history_id = reservations.history_id', 'left')
+                 ->join('hotels', 'hotels.hotel_id = booking_history.hotel_id', 'left')
+                 ->join('rooms', 'rooms.room_id = booking_history.room_id', 'left')
+                 ->join('room_types', 'room_types.room_type_id = rooms.room_type_id', 'left')
+                 ->join('staff', 'staff.staff_id = reservations.staff_id', 'left')
+                 ->where('reservations.reservation_id', $reservationId)
+                 ->first();
     }
 
     /**
