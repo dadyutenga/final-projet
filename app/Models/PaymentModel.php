@@ -101,11 +101,14 @@ class PaymentModel extends Model
                             reservations.check_in_date,
                             reservations.check_out_date,
                             reservations.total_price as reservation_total,
+                            booking_history.booking_ticket_no,
+                            booking_history.person_full_name as guest_name,
                             hotels.name as hotel_name,
                             rooms.room_number')
                     ->join('reservations', 'reservations.reservation_id = payments.reservation_id', 'left')
-                    ->join('hotels', 'hotels.hotel_id = reservations.hotel_id', 'left')
-                    ->join('rooms', 'rooms.room_id = reservations.room_id', 'left')
+                    ->join('booking_history', 'booking_history.history_id = reservations.history_id', 'left')
+                    ->join('hotels', 'hotels.hotel_id = booking_history.hotel_id', 'left')
+                    ->join('rooms', 'rooms.room_id = booking_history.room_id', 'left')
                     ->where('payments.payment_id', $paymentId)
                     ->first();
     }
@@ -116,13 +119,16 @@ class PaymentModel extends Model
     public function getPaymentsByHotel($hotelId, $status = null, $dateFrom = null, $dateTo = null, $limit = null, $offset = null)
     {
         $builder = $this->select('payments.*,
-                                reservations.check_in_date,
-                                reservations.check_out_date,
-                                rooms.room_number')
-                        ->join('reservations', 'reservations.reservation_id = payments.reservation_id', 'left')
-                        ->join('rooms', 'rooms.room_id = reservations.room_id', 'left')
-                        ->where('reservations.hotel_id', $hotelId)
-                        ->orderBy('payments.payment_date', 'DESC');
+                            reservations.check_in_date,
+                            reservations.check_out_date,
+                            booking_history.booking_ticket_no,
+                            booking_history.person_full_name as guest_name,
+                            rooms.room_number')
+                    ->join('reservations', 'reservations.reservation_id = payments.reservation_id', 'left')
+                    ->join('booking_history', 'booking_history.history_id = reservations.history_id', 'left')
+                    ->join('rooms', 'rooms.room_id = booking_history.room_id', 'left')
+                    ->where('booking_history.hotel_id', $hotelId)
+                    ->orderBy('payments.payment_date', 'DESC');
 
         if ($status) {
             $builder->where('payments.payment_status', $status);
@@ -163,7 +169,8 @@ class PaymentModel extends Model
 
         if ($hotelId) {
             $builder->join('reservations', 'reservations.reservation_id = payments.reservation_id')
-                   ->where('reservations.hotel_id', $hotelId);
+                   ->join('booking_history', 'booking_history.history_id = reservations.history_id')
+                   ->where('booking_history.hotel_id', $hotelId);
         }
 
         if ($dateFrom) {
@@ -192,11 +199,14 @@ class PaymentModel extends Model
         ];
 
         foreach ($results as $result) {
-            $stats['status'][$result['payment_status']] = [
+            $status = $result['payment_status'] ?? 'pending';
+            $method = $result['payment_method'] ?? 'cash';
+            
+            $stats['status'][$status] = [
                 'count' => $result['count'],
                 'amount' => $result['total_amount']
             ];
-            $stats['methods'][$result['payment_method']] = [
+            $stats['methods'][$method] = [
                 'count' => $result['count'],
                 'amount' => $result['total_amount']
             ];
@@ -213,13 +223,14 @@ class PaymentModel extends Model
     public function getDailyRevenue($hotelId = null, $dateFrom = null, $dateTo = null)
     {
         $builder = $this->select('DATE(payment_date) as date, SUM(amount) as revenue, COUNT(*) as transactions')
-                        ->where('payment_status', 'completed')
-                        ->groupBy('DATE(payment_date)')
-                        ->orderBy('date', 'ASC');
+                    ->where('payment_status', 'completed')
+                    ->groupBy('DATE(payment_date)')
+                    ->orderBy('date', 'ASC');
 
         if ($hotelId) {
             $builder->join('reservations', 'reservations.reservation_id = payments.reservation_id')
-                   ->where('reservations.hotel_id', $hotelId);
+                   ->join('booking_history', 'booking_history.history_id = reservations.history_id')
+                   ->where('booking_history.hotel_id', $hotelId);
         }
 
         if ($dateFrom) {
@@ -253,46 +264,52 @@ class PaymentModel extends Model
 
         if ($hotelId) {
             $builder->join('reservations', 'reservations.reservation_id = payments.reservation_id')
-                   ->where('reservations.hotel_id', $hotelId);
+                   ->join('booking_history', 'booking_history.history_id = reservations.history_id')
+                   ->where('booking_history.hotel_id', $hotelId);
         }
 
         return $builder->findAll();
     }
 
     /**
-     * Process payment
+     * Process payment - simplified version
      */
     public function processPayment($paymentData)
     {
-        $paymentData['payment_status'] = 'pending';
-        $paymentData['payment_date'] = date('Y-m-d H:i:s');
-
-        $paymentId = $this->insert($paymentData);
-
-        if ($paymentId) {
-            // Simulate payment processing
-            // In a real application, this would integrate with a payment gateway
-            $success = $this->simulatePaymentProcessing($paymentData);
-
-            if ($success) {
-                $this->update($paymentId, ['payment_status' => 'completed']);
+        try {
+            $paymentId = $this->insert($paymentData);
+            
+            if ($paymentId) {
                 return ['success' => true, 'payment_id' => $paymentId];
             } else {
-                $this->update($paymentId, ['payment_status' => 'failed']);
-                return ['success' => false, 'payment_id' => $paymentId, 'error' => 'Payment processing failed'];
+                return ['success' => false, 'error' => 'Failed to create payment record'];
             }
+        } catch (\Exception $e) {
+            return ['success' => false, 'error' => $e->getMessage()];
         }
-
-        return ['success' => false, 'error' => 'Failed to create payment record'];
     }
 
     /**
-     * Simulate payment processing (for demo purposes)
+     * Retry failed payment
      */
-    private function simulatePaymentProcessing($paymentData)
+    public function retryPayment($paymentId)
     {
-        // Simulate 95% success rate
-        return rand(1, 100) <= 95;
+        $payment = $this->find($paymentId);
+        if (!$payment || $payment['payment_status'] !== 'failed') {
+            return ['success' => false, 'error' => 'Payment not found or not in failed status'];
+        }
+
+        try {
+            // Update status to completed (simplified for demo)
+            $this->update($paymentId, [
+                'payment_status' => 'completed',
+                'payment_date' => date('Y-m-d H:i:s')
+            ]);
+            
+            return ['success' => true, 'payment_id' => $paymentId];
+        } catch (\Exception $e) {
+            return ['success' => false, 'error' => 'Payment retry failed: ' . $e->getMessage()];
+        }
     }
 
     /**
@@ -309,18 +326,21 @@ class PaymentModel extends Model
     public function getFailedPayments($hotelId = null, $limit = null, $offset = null)
     {
         $builder = $this->select('payments.*,
-                                reservations.check_in_date,
-                                reservations.check_out_date,
-                                hotels.name as hotel_name,
-                                rooms.room_number')
-                        ->join('reservations', 'reservations.reservation_id = payments.reservation_id', 'left')
-                        ->join('hotels', 'hotels.hotel_id = reservations.hotel_id', 'left')
-                        ->join('rooms', 'rooms.room_id = reservations.room_id', 'left')
-                        ->where('payments.payment_status', 'failed')
-                        ->orderBy('payments.payment_date', 'DESC');
+                            reservations.check_in_date,
+                            reservations.check_out_date,
+                            booking_history.booking_ticket_no,
+                            booking_history.person_full_name as guest_name,
+                            hotels.name as hotel_name,
+                            rooms.room_number')
+                    ->join('reservations', 'reservations.reservation_id = payments.reservation_id', 'left')
+                    ->join('booking_history', 'booking_history.history_id = reservations.history_id', 'left')
+                    ->join('hotels', 'hotels.hotel_id = booking_history.hotel_id', 'left')
+                    ->join('rooms', 'rooms.room_id = booking_history.room_id', 'left')
+                    ->where('payments.payment_status', 'failed')
+                    ->orderBy('payments.payment_date', 'DESC');
 
         if ($hotelId) {
-            $builder->where('reservations.hotel_id', $hotelId);
+            $builder->where('booking_history.hotel_id', $hotelId);
         }
 
         if ($limit) {
@@ -336,18 +356,21 @@ class PaymentModel extends Model
     public function getPendingPayments($hotelId = null, $limit = null, $offset = null)
     {
         $builder = $this->select('payments.*,
-                                reservations.check_in_date,
-                                reservations.check_out_date,
-                                hotels.name as hotel_name,
-                                rooms.room_number')
-                        ->join('reservations', 'reservations.reservation_id = payments.reservation_id', 'left')
-                        ->join('hotels', 'hotels.hotel_id = reservations.hotel_id', 'left')
-                        ->join('rooms', 'rooms.room_id = reservations.room_id', 'left')
-                        ->where('payments.payment_status', 'pending')
-                        ->orderBy('payments.payment_date', 'ASC');
+                            reservations.check_in_date,
+                            reservations.check_out_date,
+                            booking_history.booking_ticket_no,
+                            booking_history.person_full_name as guest_name,
+                            hotels.name as hotel_name,
+                            rooms.room_number')
+                    ->join('reservations', 'reservations.reservation_id = payments.reservation_id', 'left')
+                    ->join('booking_history', 'booking_history.history_id = reservations.history_id', 'left')
+                    ->join('hotels', 'hotels.hotel_id = booking_history.hotel_id', 'left')
+                    ->join('rooms', 'rooms.room_id = booking_history.room_id', 'left')
+                    ->where('payments.payment_status', 'pending')
+                    ->orderBy('payments.payment_date', 'ASC');
 
         if ($hotelId) {
-            $builder->where('reservations.hotel_id', $hotelId);
+            $builder->where('booking_history.hotel_id', $hotelId);
         }
 
         if ($limit) {
@@ -360,28 +383,7 @@ class PaymentModel extends Model
     /**
      * Retry failed payment
      */
-    public function retryPayment($paymentId)
-    {
-        $payment = $this->find($paymentId);
-        if (!$payment || $payment['payment_status'] !== 'failed') {
-            return ['success' => false, 'error' => 'Payment not found or not in failed status'];
-        }
-
-        // Update status to pending
-        $this->update($paymentId, ['payment_status' => 'pending']);
-
-        // Simulate retry processing
-        $success = $this->simulatePaymentProcessing($payment);
-
-        if ($success) {
-            $this->update($paymentId, ['payment_status' => 'completed']);
-            return ['success' => true, 'payment_id' => $paymentId];
-        } else {
-            $this->update($paymentId, ['payment_status' => 'failed']);
-            return ['success' => false, 'payment_id' => $paymentId, 'error' => 'Payment retry failed'];
-        }
-    }
-
+    
     /**
      * Get refund amount for reservation
      */
@@ -405,24 +407,30 @@ class PaymentModel extends Model
     public function searchPayments($searchTerm, $hotelId = null, $status = null, $limit = 20, $offset = 0)
     {
         $builder = $this->select('payments.*,
-                                reservations.check_in_date,
-                                reservations.check_out_date,
-                                hotels.name as hotel_name,
-                                rooms.room_number')
-                        ->join('reservations', 'reservations.reservation_id = payments.reservation_id', 'left')
-                        ->join('hotels', 'hotels.hotel_id = reservations.hotel_id', 'left')
-                        ->join('rooms', 'rooms.room_id = reservations.room_id', 'left');
+                            reservations.check_in_date,
+                            reservations.check_out_date,
+                            booking_history.booking_ticket_no,
+                            booking_history.person_full_name as guest_name,
+                            hotels.name as hotel_name,
+                            rooms.room_number')
+                    ->join('reservations', 'reservations.reservation_id = payments.reservation_id', 'left')
+                    ->join('booking_history', 'booking_history.history_id = reservations.history_id', 'left')
+                    ->join('hotels', 'hotels.hotel_id = booking_history.hotel_id', 'left')
+                    ->join('rooms', 'rooms.room_id = booking_history.room_id', 'left');
 
         if (!empty($searchTerm)) {
             $builder->groupStart()
                    ->like('hotels.name', $searchTerm)
                    ->orLike('payments.payment_id', $searchTerm)
                    ->orLike('payments.amount', $searchTerm)
+                   ->orLike('booking_history.booking_ticket_no', $searchTerm)
+                   ->orLike('booking_history.person_full_name', $searchTerm)
+                   ->orLike('rooms.room_number', $searchTerm)
                    ->groupEnd();
         }
 
         if ($hotelId) {
-            $builder->where('reservations.hotel_id', $hotelId);
+            $builder->where('booking_history.hotel_id', $hotelId);
         }
 
         if ($status) {

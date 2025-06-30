@@ -116,10 +116,18 @@ $routes->group('staff', ['namespace' => 'App\Controllers'], function($routes) {
     $routes->get('reservations/delete/(:num)', 'StaffReservationController::delete/$1');
     $routes->post('reservations/get-booking-details', 'StaffReservationController::getBookingDetails');
     
+    // Staff Payment Routes
+    $routes->get('payments', 'StaffPaymentController::index');
+    $routes->get('payments/create', 'StaffPaymentController::create');
+    $routes->post('payments/store', 'StaffPaymentController::store');
+    $routes->get('payments/view/(:num)', 'StaffPaymentController::view/$1');
+    $routes->get('payments/retry/(:num)', 'StaffPaymentController::retry/$1');
+    $routes->post('payments/update-status/(:num)', 'StaffPaymentController::updateStatus/$1');
+    $routes->get('payments/delete/(:num)', 'StaffPaymentController::delete/$1');
+    $routes->post('payments/get-reservation-details', 'StaffPaymentController::getReservationDetails');
+    $routes->get('payments/stats', 'StaffPaymentController::getStats');
 
 });
-
-
 
 // Customer Booking Routes
 $routes->get('/customer-booking/get-hotels', 'CustomerBookingController::getHotels');
