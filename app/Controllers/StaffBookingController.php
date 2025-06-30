@@ -35,7 +35,17 @@ class StaffBookingController extends BaseController
     public function index()
     {
         $staffId = session()->get('staff_id');
-        $hotelId = session()->get('staff_hotel_id');
+        
+        // Get hotel_id from staff record instead of session
+        $db = \Config\Database::connect();
+        $staffQuery = $db->table('staff')->where('staff_id', $staffId)->get();
+        $staffData = $staffQuery->getRowArray();
+        
+        $hotelId = $staffData['hotel_id'] ?? null;
+        
+        // DEBUG: Let's see what we got
+        log_message('debug', 'Staff ID: ' . $staffId);
+        log_message('debug', 'Hotel ID from staff table: ' . $hotelId);
 
         // Get filter parameters
         $status = $this->request->getGet('status');
@@ -43,54 +53,62 @@ class StaffBookingController extends BaseController
         $dateTo = $this->request->getGet('date_to');
         $search = $this->request->getGet('search');
 
-        // Get bookings using existing method
-        $bookings = $this->bookingHistoryModel->select('booking_history.*,
-                                                       hotels.name as hotel_name,
-                                                       rooms.room_number,
-                                                       room_types.type_name')
-                                              ->join('hotels', 'hotels.hotel_id = booking_history.hotel_id', 'left')
-                                              ->join('rooms', 'rooms.room_id = booking_history.room_id', 'left')
-                                              ->join('room_types', 'room_types.room_type_id = rooms.room_type_id', 'left')
-                                              ->where('booking_history.hotel_id', $hotelId);
+        // Get ALL bookings without hotel filter (temporary fix)
+        $builder = $this->bookingHistoryModel->select('booking_history.*,
+                                                   hotels.name as hotel_name,
+                                                   rooms.room_number,
+                                                   room_types.type_name')
+                                          ->join('hotels', 'hotels.hotel_id = booking_history.hotel_id', 'left')
+                                          ->join('rooms', 'rooms.room_id = booking_history.room_id', 'left')
+                                          ->join('room_types', 'room_types.room_type_id = rooms.room_type_id', 'left');
 
-        // Apply filters if provided
-        if ($status) {
-            $bookings->where('booking_history.status', $status);
-        }
+    // Filter by hotel if we have hotel_id
+    if ($hotelId) {
+        $builder->where('booking_history.hotel_id', $hotelId);
+    }
 
-        if ($dateFrom) {
-            $bookings->where('booking_history.check_in_date >=', $dateFrom);
-        }
+    // Apply other filters only if they have values
+    if (!empty($status)) {
+        $builder->where('booking_history.status', $status);
+    }
 
-        if ($dateTo) {
-            $bookings->where('booking_history.check_out_date <=', $dateTo);
-        }
+    if (!empty($dateFrom)) {
+        $builder->where('booking_history.check_in_date >=', $dateFrom);
+    }
 
-        if ($search) {
-            $bookings->groupStart()
-                    ->like('booking_history.person_full_name', $search)
-                    ->orLike('booking_history.person_phone', $search)
-                    ->orLike('booking_history.booking_ticket_no', $search)
-                    ->orLike('rooms.room_number', $search)
-                    ->groupEnd();
-        }
+    if (!empty($dateTo)) {
+        $builder->where('booking_history.check_out_date <=', $dateTo);
+    }
 
-        $bookings = $bookings->orderBy('booking_history.created_at', 'DESC')->findAll();
+    if (!empty($search)) {
+        $builder->groupStart()
+                ->like('booking_history.person_full_name', $search)
+                ->orLike('booking_history.person_phone', $search)
+                ->orLike('booking_history.booking_ticket_no', $search)
+                ->orLike('rooms.room_number', $search)
+                ->groupEnd();
+    }
 
-        // Get statistics using existing method
-        $stats = $this->bookingHistoryModel->getBookingStatistics($hotelId, $dateFrom, $dateTo);
+    $bookings = $builder->orderBy('booking_history.created_at', 'DESC')->findAll();
 
-        $data = [
-            'title' => 'Manage Bookings',
-            'bookings' => $bookings,
-            'stats' => $stats,
-            'current_status' => $status,
-            'date_from' => $dateFrom,
-            'date_to' => $dateTo,
-            'search' => $search
-        ];
+    // DEBUG: Let's see what we got
+    log_message('debug', 'Total bookings found: ' . count($bookings));
 
-        return view('staff/bookings/index', $data);
+    // Get statistics
+    $stats = $this->bookingHistoryModel->getBookingStatistics($hotelId, $dateFrom, $dateTo);
+
+    $data = [
+        'title' => 'Manage Bookings',
+        'bookings' => $bookings,
+        'stats' => $stats,
+        'current_status' => $status,
+        'date_from' => $dateFrom,
+        'date_to' => $dateTo,
+        'search' => $search,
+        'hotel_id' => $hotelId
+    ];
+
+    return view('staff/bookings/index', $data);
     }
 
     /**

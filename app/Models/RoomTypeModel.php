@@ -83,15 +83,11 @@ class RoomTypeModel extends Model
     }
 
     /**
-     * Get room types by hotel
+     * Get room types by hotel - FIXED VERSION
      */
     public function getRoomTypesByHotel($hotelId)
     {
-        return $this->select('room_types.*')
-                    ->join('rooms', 'rooms.room_type_id = room_types.room_type_id')
-                    ->where('rooms.hotel_id', $hotelId)
-                    ->groupBy('room_types.room_type_id')
-                    ->findAll();
+        return $this->where('hotel_id', $hotelId)->findAll();
     }
 
     /**

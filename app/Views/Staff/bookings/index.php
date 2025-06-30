@@ -446,6 +446,14 @@
             </div>
         <?php endif; ?>
 
+        <!-- DEBUG: Add this temporarily before your table -->
+        <div class="alert alert-info">
+            <strong>Debug Info:</strong><br>
+            Total bookings found: <?= count($bookings) ?><br>
+            Hotel ID: <?= session()->get('staff_hotel_id') ?><br>
+            Current filters: Status = "<?= $current_status ?: 'All' ?>", From = "<?= $date_from ?: 'None' ?>", To = "<?= $date_to ?: 'None' ?>"
+        </div>
+
         <!-- Booking Statistics -->
         <div class="stats-grid">
             <div class="stat-card">
@@ -604,12 +612,9 @@
                 </div>
             <?php else: ?>
                 <div class="empty-state">
-                    <i class="fas fa-calendar-check"></i>
-                    <h3>No Bookings Found</h3>
-                    <p>No bookings match your current filters.</p>
-                    <a href="<?= base_url('staff/bookings/create') ?>" class="btn btn-primary" style="margin-top: 1rem;">
-                        <i class="fas fa-plus"></i> Create New Booking
-                    </a>
+                    <i class="fas fa-calendar-times"></i>
+                    <h3>No bookings found</h3>
+                    <p>There are no bookings matching your criteria.</p>
                 </div>
             <?php endif; ?>
         </div>
