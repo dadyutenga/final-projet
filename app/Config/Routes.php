@@ -94,16 +94,19 @@ $routes->group('staff', ['namespace' => 'App\Controllers'], function($routes) {
     $routes->get('tasks/show/(:num)', 'TaskViewerController::show/$1');
     $routes->post('tasks/update-status/(:num)', 'TaskViewerController::updateStatus/$1');
     
-    // Booking management routes
-    $routes->get('bookings', 'BookingController::index');
-    $routes->get('bookings/create', 'BookingController::create');
-    $routes->post('bookings/store', 'BookingController::store');
-    $routes->get('bookings/view/(:num)', 'BookingController::view/$1');
-    $routes->post('bookings/update-status/(:num)', 'BookingController::updateStatus/$1');
-    $routes->post('bookings/delete/(:num)', 'BookingController::delete/$1');
-    $routes->post('bookings/search-ticket', 'BookingController::searchByTicket');
-    $routes->get('bookings/today-activity', 'BookingController::todayActivity');
-    $routes->post('bookings/get-available-rooms', 'BookingController::getAvailableRooms');
+    // Staff Booking Management Routes - NEW
+    $routes->get('bookings', 'StaffBookingController::index');
+    $routes->get('bookings/create', 'StaffBookingController::create');
+    $routes->post('bookings/store', 'StaffBookingController::store');
+    $routes->get('bookings/view/(:num)', 'StaffBookingController::view/$1');
+    $routes->get('bookings/confirm/(:num)', 'StaffBookingController::confirm/$1');
+    $routes->get('bookings/checkin/(:num)', 'StaffBookingController::checkIn/$1');
+    $routes->get('bookings/complete/(:num)', 'StaffBookingController::complete/$1');
+    $routes->get('bookings/cancel/(:num)', 'StaffBookingController::cancel/$1');
+    $routes->get('bookings/delete/(:num)', 'StaffBookingController::delete/$1');
+    $routes->post('bookings/getAvailableRooms', 'StaffBookingController::getAvailableRooms');
+    
+
 });
 
 // Customer Booking Routes
