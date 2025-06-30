@@ -105,9 +105,20 @@ $routes->group('staff', ['namespace' => 'App\Controllers'], function($routes) {
     $routes->get('bookings/cancel/(:num)', 'StaffBookingController::cancel/$1');
     $routes->get('bookings/delete/(:num)', 'StaffBookingController::delete/$1');
     $routes->post('bookings/getAvailableRooms', 'StaffBookingController::getAvailableRooms');
+
+    $routes->get('reservations', 'StaffReservationController::index');
+    $routes->get('reservations/create', 'StaffReservationController::create');
+    $routes->post('reservations/store', 'StaffReservationController::store');
+    $routes->get('reservations/view/(:num)', 'StaffReservationController::view/$1');
+    $routes->get('reservations/confirm/(:num)', 'StaffReservationController::confirm/$1');
+    $routes->get('reservations/cancel/(:num)', 'StaffReservationController::cancel/$1');
+    $routes->get('reservations/complete/(:num)', 'StaffReservationController::complete/$1');
+    $routes->post('reservations/get-booking-details', 'StaffReservationController::getBookingDetails');
     
 
 });
+
+
 
 // Customer Booking Routes
 $routes->get('/customer-booking/get-hotels', 'CustomerBookingController::getHotels');

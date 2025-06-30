@@ -64,7 +64,7 @@
         <div class="nav-section">
             <div class="nav-section-title">Work Management</div>
             
-            <a href="<?= base_url('staff/reservation') ?>" 
+            <a href="<?= base_url('staff/reservations') ?>" 
                class="nav-item <?= (strpos(current_url(), 'staff/reports') !== false) ? 'active' : '' ?>" 
                data-section="reports">
                 <i class="fas fa-chart-bar"></i>
