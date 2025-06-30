@@ -14,7 +14,6 @@ class PaymentModel extends Model
     protected $protectFields    = true;
     protected $allowedFields    = [
         'reservation_id',
-        'user_id',
         'amount',
         'payment_method',
         'payment_status',
@@ -31,7 +30,6 @@ class PaymentModel extends Model
     // Validation
     protected $validationRules      = [
         'reservation_id'   => 'permit_empty|is_natural_no_zero',
-        'user_id'          => 'permit_empty|is_natural_no_zero',
         'amount'           => 'required|decimal|greater_than[0]',
         'payment_method'   => 'required|in_list[credit_card,debit_card,cash,online]',
         'payment_status'   => 'permit_empty|in_list[pending,completed,failed]',
@@ -95,7 +93,7 @@ class PaymentModel extends Model
     }
 
     /**
-     * Get payment with reservation and user details
+     * Get payment with reservation details
      */
     public function getPaymentWithDetails($paymentId)
     {
@@ -103,43 +101,13 @@ class PaymentModel extends Model
                             reservations.check_in_date,
                             reservations.check_out_date,
                             reservations.total_price as reservation_total,
-                            users.full_name as user_name,
-                            users.email as user_email,
                             hotels.name as hotel_name,
                             rooms.room_number')
                     ->join('reservations', 'reservations.reservation_id = payments.reservation_id', 'left')
-                    ->join('users', 'users.user_id = payments.user_id', 'left')
                     ->join('hotels', 'hotels.hotel_id = reservations.hotel_id', 'left')
                     ->join('rooms', 'rooms.room_id = reservations.room_id', 'left')
                     ->where('payments.payment_id', $paymentId)
                     ->first();
-    }
-
-    /**
-     * Get payments by user
-     */
-    public function getPaymentsByUser($userId, $status = null, $limit = null, $offset = null)
-    {
-        $builder = $this->select('payments.*,
-                                reservations.check_in_date,
-                                reservations.check_out_date,
-                                hotels.name as hotel_name,
-                                rooms.room_number')
-                        ->join('reservations', 'reservations.reservation_id = payments.reservation_id', 'left')
-                        ->join('hotels', 'hotels.hotel_id = reservations.hotel_id', 'left')
-                        ->join('rooms', 'rooms.room_id = reservations.room_id', 'left')
-                        ->where('payments.user_id', $userId)
-                        ->orderBy('payments.payment_date', 'DESC');
-
-        if ($status) {
-            $builder->where('payments.payment_status', $status);
-        }
-
-        if ($limit) {
-            $builder->limit($limit, $offset);
-        }
-
-        return $builder->findAll();
     }
 
     /**
@@ -150,11 +118,8 @@ class PaymentModel extends Model
         $builder = $this->select('payments.*,
                                 reservations.check_in_date,
                                 reservations.check_out_date,
-                                users.full_name as user_name,
-                                users.email as user_email,
                                 rooms.room_number')
                         ->join('reservations', 'reservations.reservation_id = payments.reservation_id', 'left')
-                        ->join('users', 'users.user_id = payments.user_id', 'left')
                         ->join('rooms', 'rooms.room_id = reservations.room_id', 'left')
                         ->where('reservations.hotel_id', $hotelId)
                         ->orderBy('payments.payment_date', 'DESC');
@@ -346,12 +311,9 @@ class PaymentModel extends Model
         $builder = $this->select('payments.*,
                                 reservations.check_in_date,
                                 reservations.check_out_date,
-                                users.full_name as user_name,
-                                users.email as user_email,
                                 hotels.name as hotel_name,
                                 rooms.room_number')
                         ->join('reservations', 'reservations.reservation_id = payments.reservation_id', 'left')
-                        ->join('users', 'users.user_id = payments.user_id', 'left')
                         ->join('hotels', 'hotels.hotel_id = reservations.hotel_id', 'left')
                         ->join('rooms', 'rooms.room_id = reservations.room_id', 'left')
                         ->where('payments.payment_status', 'failed')
@@ -376,12 +338,9 @@ class PaymentModel extends Model
         $builder = $this->select('payments.*,
                                 reservations.check_in_date,
                                 reservations.check_out_date,
-                                users.full_name as user_name,
-                                users.email as user_email,
                                 hotels.name as hotel_name,
                                 rooms.room_number')
                         ->join('reservations', 'reservations.reservation_id = payments.reservation_id', 'left')
-                        ->join('users', 'users.user_id = payments.user_id', 'left')
                         ->join('hotels', 'hotels.hotel_id = reservations.hotel_id', 'left')
                         ->join('rooms', 'rooms.room_id = reservations.room_id', 'left')
                         ->where('payments.payment_status', 'pending')
@@ -448,20 +407,15 @@ class PaymentModel extends Model
         $builder = $this->select('payments.*,
                                 reservations.check_in_date,
                                 reservations.check_out_date,
-                                users.full_name as user_name,
-                                users.email as user_email,
                                 hotels.name as hotel_name,
                                 rooms.room_number')
                         ->join('reservations', 'reservations.reservation_id = payments.reservation_id', 'left')
-                        ->join('users', 'users.user_id = payments.user_id', 'left')
                         ->join('hotels', 'hotels.hotel_id = reservations.hotel_id', 'left')
                         ->join('rooms', 'rooms.room_id = reservations.room_id', 'left');
 
         if (!empty($searchTerm)) {
             $builder->groupStart()
-                   ->like('users.full_name', $searchTerm)
-                   ->orLike('users.email', $searchTerm)
-                   ->orLike('hotels.name', $searchTerm)
+                   ->like('hotels.name', $searchTerm)
                    ->orLike('payments.payment_id', $searchTerm)
                    ->orLike('payments.amount', $searchTerm)
                    ->groupEnd();
