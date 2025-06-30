@@ -112,36 +112,12 @@ class StaffBookingController extends BaseController
     }
 
     /**
-     * Show create booking form
+     * Show create booking form - redirect to customer booking
      */
     public function create()
     {
-        $staffId = session()->get('staff_id');
-        
-        // Get hotel_id from staff record instead of session
-        $db = \Config\Database::connect();
-        $staffQuery = $db->table('staff')->where('staff_id', $staffId)->get();
-        $staffData = $staffQuery->getRowArray();
-        
-        $hotelId = $staffData['hotel_id'] ?? null;
-
-        // Get available rooms using existing method
-        $availableRooms = $this->roomModel->getAvailableRooms($hotelId);
-        
-        // Get room types using existing method
-        $roomTypes = $this->roomTypeModel->getRoomTypesByHotel($hotelId);
-
-        // Get hotel info
-        $hotel = $this->hotelModel->find($hotelId);
-
-        $data = [
-            'title' => 'Create New Booking',
-            'availableRooms' => $availableRooms,
-            'roomTypes' => $roomTypes,
-            'hotel' => $hotel
-        ];
-
-        return view('staff/bookings/create', $data);
+        // Redirect staff to use the working customer booking system
+        return redirect()->to('/book')->with('info', 'Please use the booking form below to create a new booking.');
     }
 
     /**
