@@ -446,14 +446,6 @@
             </div>
         <?php endif; ?>
 
-        <!-- DEBUG: Add this temporarily before your table -->
-        <div class="alert alert-info">
-            <strong>Debug Info:</strong><br>
-            Total bookings found: <?= count($bookings) ?><br>
-            Hotel ID: <?= session()->get('staff_id') ?><br>
-            Current filters: Status = "<?= $current_status ?: 'All' ?>", From = "<?= $date_from ?: 'None' ?>", To = "<?= $date_to ?: 'None' ?>"
-        </div>
-
         <!-- Booking Statistics -->
         <div class="stats-grid">
             <div class="stat-card">
