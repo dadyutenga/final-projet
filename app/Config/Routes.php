@@ -127,6 +127,11 @@ $routes->group('staff', ['namespace' => 'App\Controllers'], function($routes) {
     $routes->post('payments/get-reservation-details', 'StaffPaymentController::getReservationDetails');
     $routes->get('payments/stats', 'StaffPaymentController::getStats');
 
+    $routes->get('profile', 'StaffProfileController::index');
+    $routes->post('profile/update', 'StaffProfileController::update');
+    $routes->post('profile/change-password', 'StaffProfileController::changePassword');
+    $routes->get('profile/stats', 'StaffProfileController::getStats');
+
 });
 
 // Customer Booking Routes
