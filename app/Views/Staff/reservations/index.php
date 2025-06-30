@@ -541,6 +541,12 @@
                                                     <i class="fas fa-times"></i>
                                                 </a>
                                             <?php endif; ?>
+                                            <!-- Delete button for ALL statuses -->
+                                            <a href="<?= base_url('staff/reservations/delete/' . $reservation['reservation_id']) ?>" 
+                                               class="btn btn-danger btn-sm" title="Delete"
+                                               onclick="return confirm('Are you sure you want to permanently delete this reservation? This action cannot be undone.')">
+                                                <i class="fas fa-trash"></i>
+                                            </a>
                                         </div>
                                     </td>
                                 </tr>

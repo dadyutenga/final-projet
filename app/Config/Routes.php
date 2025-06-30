@@ -113,6 +113,7 @@ $routes->group('staff', ['namespace' => 'App\Controllers'], function($routes) {
     $routes->get('reservations/confirm/(:num)', 'StaffReservationController::confirm/$1');
     $routes->get('reservations/cancel/(:num)', 'StaffReservationController::cancel/$1');
     $routes->get('reservations/complete/(:num)', 'StaffReservationController::complete/$1');
+    $routes->get('reservations/delete/(:num)', 'StaffReservationController::delete/$1');
     $routes->post('reservations/get-booking-details', 'StaffReservationController::getBookingDetails');
     
 

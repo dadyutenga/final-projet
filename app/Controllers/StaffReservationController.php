@@ -355,4 +355,31 @@ class StaffReservationController extends BaseController
             ]);
         }
     }
+
+    /**
+     * Delete reservation
+     */
+    public function delete($reservationId)
+    {
+        $hotelId = $this->getStaffHotelId();
+
+        $reservation = $this->reservationModel->find($reservationId);
+        if (!$reservation) {
+            return redirect()->to('/staff/reservations')->with('error', 'Reservation not found');
+        }
+
+        // Get hotel_id from reservation
+        $reservationDetails = $this->reservationModel->getReservationWithDetails($reservationId);
+        if ($reservationDetails['hotel_id'] != $hotelId) {
+            return redirect()->to('/staff/reservations')->with('error', 'Access denied');
+        }
+
+        // Allow deletion of all reservation statuses
+        try {
+            $this->reservationModel->delete($reservationId);
+            return redirect()->to('/staff/reservations')->with('success', 'Reservation deleted successfully');
+        } catch (\Exception $e) {
+            return redirect()->back()->with('error', 'Failed to delete reservation: ' . $e->getMessage());
+        }
+    }
 }
