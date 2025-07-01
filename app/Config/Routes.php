@@ -79,6 +79,12 @@ $routes->group('manager', ['namespace' => 'App\Controllers'], function($routes) 
     $routes->post('staff-tasks/reassign/(:num)', 'StaffTaskController::reassign/$1');
     $routes->post('staff-tasks/update-status/(:num)', 'StaffTaskController::updateStatus/$1');
 
+    $routes->get('profile', 'ManagerProfileController::index');
+    $routes->post('profile/update', 'ManagerProfileController::update');
+    $routes->post('profile/change-password', 'ManagerProfileController::changePassword');
+    $routes->get('profile/stats', 'ManagerProfileController::getStats');
+    $routes->get('profile/activity', 'ManagerProfileController::getRecentActivity');
+
 });
 
 $routes->group('staff', ['namespace' => 'App\Controllers'], function($routes) {
