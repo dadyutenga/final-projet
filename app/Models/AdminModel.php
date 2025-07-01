@@ -82,26 +82,66 @@ class AdminModel extends Model
     }
 
     /**
-     * Get admin with hotels
+     * Get admin with system statistics
      */
-    public function getAdminWithHotels($adminId)
+    public function getAdminWithStats($adminId)
     {
-        return $this->select('admins.*, COUNT(hotels.hotel_id) as hotel_count')
-                    ->join('hotels', 'hotels.admin_id = admins.admin_id', 'left')
-                    ->where('admins.admin_id', $adminId)
-                    ->groupBy('admins.admin_id')
-                    ->first();
+        $admin = $this->find($adminId);
+        if (!$admin) {
+            return null;
+        }
+
+        // Get system statistics
+        $hotelModel = new \App\Models\HotelModel();
+        $managerModel = new \App\Models\ManagerModel();
+
+        $admin['total_hotels'] = $hotelModel->countAll();
+        $admin['total_managers'] = $managerModel->countAll();
+        $admin['total_admins'] = $this->countAll();
+
+        return $admin;
     }
 
     /**
-     * Get all admins with hotel counts
+     * Get admin with hotels (through managers)
      */
-    public function getAdminsWithHotelCounts()
+    public function getAdminWithHotels($adminId)
     {
-        return $this->select('admins.*, COUNT(hotels.hotel_id) as hotel_count')
-                    ->join('hotels', 'hotels.admin_id = admins.admin_id', 'left')
-                    ->groupBy('admins.admin_id')
-                    ->findAll();
+        $admin = $this->find($adminId);
+        if (!$admin) {
+            return null;
+        }
+
+        // Since admins don't directly manage hotels, we'll show system-wide stats
+        $hotelModel = new \App\Models\HotelModel();
+        $managerModel = new \App\Models\ManagerModel();
+
+        $admin['hotel_count'] = $hotelModel->countAll();
+        $admin['manager_count'] = $managerModel->countAll();
+        $admin['total_admins'] = $this->countAll();
+
+        return $admin;
+    }
+
+    /**
+     * Get all admins with system statistics
+     */
+    public function getAdminsWithStats()
+    {
+        $admins = $this->findAll();
+        
+        $hotelModel = new \App\Models\HotelModel();
+        $managerModel = new \App\Models\ManagerModel();
+        
+        $totalHotels = $hotelModel->countAll();
+        $totalManagers = $managerModel->countAll();
+
+        foreach ($admins as &$admin) {
+            $admin['hotel_count'] = $totalHotels;
+            $admin['manager_count'] = $totalManagers;
+        }
+
+        return $admins;
     }
 
     /**
@@ -131,5 +171,48 @@ class AdminModel extends Model
         }
 
         return $this->update($adminId, $data);
+    }
+
+    /**
+     * Get admin statistics
+     */
+    public function getAdminStatistics($adminId)
+    {
+        $admin = $this->find($adminId);
+        if (!$admin) {
+            return null;
+        }
+
+        $hotelModel = new \App\Models\HotelModel();
+        $managerModel = new \App\Models\ManagerModel();
+        $staffModel = new \App\Models\StaffModel();
+
+        return [
+            'total_hotels' => $hotelModel->countAll(),
+            'total_managers' => $managerModel->countAll(),
+            'total_staff' => $staffModel->countAll(),
+            'total_admins' => $this->countAll(),
+            'hotels_with_managers' => $hotelModel->where('manager_id IS NOT NULL')->countAllResults(),
+            'hotels_without_managers' => $hotelModel->where('manager_id IS NULL')->countAllResults()
+        ];
+    }
+
+    /**
+     * Get system overview for admin dashboard
+     */
+    public function getSystemOverview()
+    {
+        $hotelModel = new \App\Models\HotelModel();
+        $managerModel = new \App\Models\ManagerModel();
+        $staffModel = new \App\Models\StaffModel();
+
+        return [
+            'total_hotels' => $hotelModel->countAll(),
+            'total_managers' => $managerModel->countAll(),
+            'total_staff' => $staffModel->countAll(),
+            'total_admins' => $this->countAll(),
+            'recent_hotels' => $hotelModel->orderBy('created_at', 'DESC')->limit(5)->findAll(),
+            'recent_managers' => $managerModel->orderBy('created_at', 'DESC')->limit(5)->findAll()
+        ];
     }
 }

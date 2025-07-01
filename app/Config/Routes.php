@@ -31,6 +31,13 @@ $routes->group('admin', ['namespace' => 'App\Controllers'], function($routes) {
     $routes->get('hotels/new', 'HotelController::new');
     $routes->post('hotels/create', 'HotelController::create');
     $routes->delete('hotels/(:num)', 'HotelController::delete/$1');
+
+
+    $routes->get('profile', 'AdminController::profile');
+    $routes->post('profile/update', 'AdminController::updateProfile');
+    $routes->post('profile/change-password', 'AdminController::changePassword');
+    $routes->get('profile/stats', 'AdminController::getStats');
+    $routes->get('profile/system-stats', 'AdminController::getSystemStats');
 });
 
 $routes->group('manager', ['namespace' => 'App\Controllers'], function($routes) {
