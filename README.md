@@ -1,4 +1,4 @@
-welcome to  the   mwaitege    app
+welcome to  the   prototype hotel  management web feel   free   to  use the  web  app
 
 1. **Main Admin**
 - **Username:** `admin`
